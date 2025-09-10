@@ -4,7 +4,7 @@ import { useSocket } from '../../contexts/SocketContext';
 import Sidebar from './Sidebar';
 import ChatWindow from './ChatWindow';
 import Header from './Header';
-import JoinRequests from './JoinRequests';
+import JoinRequests from '../Admin/JoinRequests';
 import Settings from '../Settings/Settings';
 import MediaManagement from '../Admin/MediaManagement';
 import { Menu, X, UserPlus } from 'lucide-react';
