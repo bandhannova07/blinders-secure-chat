@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://blinders-secure-chat-backend.onrender.com';
 
 // Configure axios defaults
 axios.defaults.baseURL = API_BASE_URL;
@@ -58,12 +58,17 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = async () => {
       if (token) {
         try {
-          const response = await axios.get('/auth/profile');
+          const response = await axios.get('/api/auth/me', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
           setUser(response.data.user);
+          setIsAuthenticated(true);
         } catch (error) {
           console.error('Auth check failed:', error);
           localStorage.removeItem('blinders_token');
           setToken(null);
+          setUser(null);
+          setIsAuthenticated(false);
         }
       }
       setLoading(false);
@@ -74,7 +79,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password, twoFactorToken = null) => {
     try {
-      const response = await axios.post('/auth/login', {
+      const response = await axios.post('/api/auth/login', {
         username,
         password,
         twoFactorToken
@@ -112,7 +117,7 @@ export const AuthProvider = ({ children }) => {
 
   const signup = async (username, email, password) => {
     try {
-      const response = await axios.post('/auth/signup', {
+      const response = await axios.post('/api/auth/signup', {
         username,
         email,
         password

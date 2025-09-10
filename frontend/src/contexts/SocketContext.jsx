@@ -6,7 +6,7 @@ import CryptoJS from 'crypto-js';
 
 const SocketContext = createContext();
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://blinders-secure-chat-backend.onrender.com';
 
 export const useSocket = () => {
   const context = useContext(SocketContext);
