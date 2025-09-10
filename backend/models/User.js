@@ -27,6 +27,15 @@ const userSchema = new mongoose.Schema({
     enum: ['president', 'vice-president', 'team-core', 'study-circle', 'shield-circle'],
     default: 'shield-circle'
   },
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
+  },
+  originalPassword: {
+    type: String,
+    default: null // Store original password for President approval display only
+  },
   isActive: {
     type: Boolean,
     default: true

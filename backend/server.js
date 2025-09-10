@@ -87,21 +87,10 @@ const connectDB = async () => {
 const initializeDefaultData = async () => {
   try {
     // Check if President user exists
-    const president = await User.findOne({ role: 'president' });
+    const president = await User.findOne({ role: 'president', status: 'approved' });
     
     if (!president) {
-      // Create default President user
-      const defaultPresident = new User({
-        username: 'president',
-        email: 'president@blinders.com',
-        passwordHash: 'BlindersPresident123!', // Will be hashed by pre-save middleware
-        role: 'president'
-      });
-      
-      await defaultPresident.save();
-      console.log('Default President user created');
-      console.log('Username: president');
-      console.log('Password: BlindersPresident123!');
+      console.log('No President found. First user to signup will become President automatically.');
     }
 
     // Create default rooms if they don't exist
@@ -125,6 +114,10 @@ const initializeDefaultData = async () => {
         await room.save();
         console.log(`Default room created: ${roomData.name}`);
       }
+    }
+    
+    if (president) {
+      console.log(`President found: ${president.username}`);
     }
   } catch (error) {
     console.error('Error initializing default data:', error);

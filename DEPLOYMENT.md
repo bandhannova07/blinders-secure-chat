@@ -22,6 +22,7 @@
    - Connect your GitHub repository
    - Create a new Web Service
    - Use these settings:
+     - **Root Directory**: `backend`
      - **Build Command**: `npm install`
      - **Start Command**: `npm start`
      - **Environment**: Node

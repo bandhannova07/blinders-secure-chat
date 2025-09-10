@@ -106,6 +106,28 @@ export const AuthProvider = ({ children }) => {
     toast.success('Logged out successfully');
   };
 
+  const signup = async (username, email, password) => {
+    try {
+      const response = await axios.post('/auth/signup', {
+        username,
+        email,
+        password
+      });
+      
+      // If user becomes President, auto-login
+      if (response.data.user.isPresident) {
+        const loginResponse = await login(username, password);
+        return loginResponse;
+      }
+      
+      return response.data;
+    } catch (error) {
+      const message = error.response?.data?.error || 'Signup failed';
+      toast.error(message);
+      throw new Error(message);
+    }
+  };
+
   const register = async (userData) => {
     try {
       const response = await axios.post('/auth/register', userData);
@@ -159,6 +181,7 @@ export const AuthProvider = ({ children }) => {
     token,
     login,
     logout,
+    signup,
     register,
     setup2FA,
     verify2FA,

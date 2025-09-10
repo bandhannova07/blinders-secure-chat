@@ -4,13 +4,15 @@ import { useSocket } from '../../contexts/SocketContext';
 import Sidebar from './Sidebar';
 import ChatWindow from './ChatWindow';
 import Header from './Header';
-import { Menu, X } from 'lucide-react';
+import JoinRequests from '../Admin/JoinRequests';
+import { Menu, X, UserPlus } from 'lucide-react';
 
 const Dashboard = () => {
   const { user } = useAuth();
   const { connected } = useSocket();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedRoom, setSelectedRoom] = useState(null);
+  const [showJoinRequests, setShowJoinRequests] = useState(false);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -57,20 +59,35 @@ const Dashboard = () => {
           />
         )}
 
-        {/* Chat Area */}
+        {/* Main Content Area */}
         <div className="flex-1 flex flex-col">
           {selectedRoom ? (
             <ChatWindow room={selectedRoom} />
+          ) : showJoinRequests ? (
+            <div className="flex-1 p-6 overflow-y-auto">
+              <JoinRequests onBack={() => setShowJoinRequests(false)} />
+            </div>
           ) : (
             <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
+              <div className="text-center max-w-md">
                 <div className="text-6xl mb-4">👑</div>
                 <h2 className="text-2xl font-bold text-blinders-gold mb-2">
                   Welcome to Blinders Secure Chat
                 </h2>
-                <p className="text-gray-400 mb-4">
+                <p className="text-gray-400 mb-6">
                   Select a room from the sidebar to start chatting
                 </p>
+                
+                {user?.role === 'president' && (
+                  <button
+                    onClick={() => setShowJoinRequests(true)}
+                    className="btn-primary flex items-center space-x-2 mx-auto mb-4"
+                  >
+                    <UserPlus className="h-5 w-5" />
+                    <span>Manage Join Requests</span>
+                  </button>
+                )}
+                
                 <p className="text-sm text-gray-500">
                   By order of the Peaky Blinders
                 </p>

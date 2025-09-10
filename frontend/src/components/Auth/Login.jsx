@@ -4,15 +4,18 @@ import { Eye, EyeOff, Shield, Crown } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Login = () => {
-  const { login } = useAuth();
+  const { login, signup } = useAuth();
+  const [isSignup, setIsSignup] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
+    email: '',
     password: '',
     twoFactorToken: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [requiresTwoFactor, setRequiresTwoFactor] = useState(false);
+  const [pendingApproval, setPendingApproval] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -26,21 +29,41 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const result = await login(
-        formData.username, 
-        formData.password, 
-        requiresTwoFactor ? formData.twoFactorToken : null
-      );
+      if (isSignup) {
+        const result = await signup(formData.username, formData.email, formData.password);
+        if (result.user.status === 'pending') {
+          setPendingApproval(true);
+          toast.success('Signup successful! Please wait for President approval.');
+        } else if (result.user.isPresident) {
+          toast.success('Welcome, President! You are now logged in.');
+        }
+      } else {
+        const result = await login(
+          formData.username, 
+          formData.password, 
+          requiresTwoFactor ? formData.twoFactorToken : null
+        );
 
-      if (result.requiresTwoFactor) {
-        setRequiresTwoFactor(true);
-        toast.success('Enter your 2FA code to continue');
+        if (result.requiresTwoFactor) {
+          setRequiresTwoFactor(true);
+          toast.success('Enter your 2FA code to continue');
+        }
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Auth error:', error);
+      if (error.message.includes('pending')) {
+        setPendingApproval(true);
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const toggleMode = () => {
+    setIsSignup(!isSignup);
+    setFormData({ username: '', email: '', password: '', twoFactorToken: '' });
+    setRequiresTwoFactor(false);
+    setPendingApproval(false);
   };
 
   return (
@@ -56,13 +79,32 @@ const Login = () => {
             Blinders Secure Chat
           </h1>
           <p className="text-gray-400">
-            By order of the Peaky Blinders
+            {isSignup ? 'Join the Blinders' : 'By order of the Peaky Blinders'}
           </p>
         </div>
 
-        {/* Login Form */}
+        {/* Auth Form */}
         <div className="card glow-gold">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          {pendingApproval ? (
+            <div className="text-center py-8">
+              <div className="mb-4">
+                <Shield className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
+              </div>
+              <h3 className="text-xl font-semibold text-blinders-gold mb-2">
+                Awaiting Approval
+              </h3>
+              <p className="text-gray-300 mb-4">
+                Please wait, your request is pending President's approval.
+              </p>
+              <button
+                onClick={() => setPendingApproval(false)}
+                className="btn-secondary"
+              >
+                Back to Login
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">
                 Username
@@ -79,6 +121,25 @@ const Login = () => {
                 disabled={loading}
               />
             </div>
+
+            {isSignup && (
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="input-field w-full"
+                  placeholder="Enter your email"
+                  required
+                  disabled={loading}
+                />
+              </div>
+            )}
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
@@ -146,23 +207,23 @@ const Login = () => {
               ) : (
                 <>
                   <Shield className="h-5 w-5" />
-                  <span>Enter the Blinders</span>
+                  <span>{isSignup ? 'Join the Blinders' : 'Enter the Blinders'}</span>
                 </>
               )}
             </button>
-          </form>
 
-          {/* Default Credentials Info */}
-          <div className="mt-6 p-4 bg-blinders-gray rounded-lg border border-blinders-light-gray">
-            <h3 className="text-sm font-semibold text-blinders-gold mb-2">Default Credentials:</h3>
-            <div className="text-xs text-gray-300 space-y-1">
-              <p><strong>Username:</strong> president</p>
-              <p><strong>Password:</strong> BlindersPresident123!</p>
-              <p className="text-gray-400 mt-2">
-                Use these credentials to access the system as President and create other users.
-              </p>
+            {/* Toggle between Login and Signup */}
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                onClick={toggleMode}
+                className="text-blinders-gold hover:text-yellow-400 text-sm font-medium transition-colors"
+              >
+                {isSignup ? 'Already have an account? Login here' : 'New to Blinders? Sign up here'}
+              </button>
             </div>
-          </div>
+            </form>
+          )}
         </div>
 
         {/* Footer */}
