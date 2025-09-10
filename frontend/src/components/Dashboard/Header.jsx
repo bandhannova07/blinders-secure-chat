@@ -1,9 +1,9 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSocket } from '../../contexts/SocketContext';
-import { Menu, X, Crown, Shield, LogOut, Settings, Users, UserPlus } from 'lucide-react';
+import { Menu, X, Crown, Shield, LogOut, Settings, Users, UserPlus, Database } from 'lucide-react';
 
-const Header = ({ toggleSidebar, sidebarOpen, onShowJoinRequests, onShowSettings }) => {
+const Header = ({ toggleSidebar, sidebarOpen, onShowJoinRequests, onShowSettings, onShowMediaManagement }) => {
   const { logout, user } = useAuth();
   const { connected } = useSocket();
 
@@ -101,14 +101,23 @@ const Header = ({ toggleSidebar, sidebarOpen, onShowJoinRequests, onShowSettings
                   onClick={onShowSettings}
                   className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-white hover:bg-blinders-gray transition-colors duration-200"
                 >
-                  <Settings className="h-4 w-4" />
+                  <Settings className="w-4 h-4" />
                   <span>Settings</span>
                 </button>
+                {user?.role === 'president' && (
+                  <button
+                    onClick={onShowMediaManagement}
+                    className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-white hover:bg-blinders-gray transition-colors duration-200"
+                  >
+                    <Database className="w-4 h-4" />
+                    <span>Media Management</span>
+                  </button>
+                )}
                 <button
                   onClick={logout}
-                  className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-white hover:bg-blinders-gray transition-colors duration-200"
+                  className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-red-400 hover:bg-blinders-gray transition-colors duration-200"
                 >
-                  <LogOut className="h-4 w-4" />
+                  <LogOut className="w-4 h-4" />
                   <span>Logout</span>
                 </button>
               </div>

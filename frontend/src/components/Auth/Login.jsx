@@ -79,7 +79,7 @@ const Login = () => {
             Blinders Secure Chat
           </h1>
           <p className="text-gray-400">
-            {isSignup ? 'Join the Blinders' : 'By order of the Peaky Blinders'}
+            {isSignup ? 'Join the Blinders' : 'By order of the BLINDERS'}
           </p>
         </div>
 

@@ -114,7 +114,7 @@ Use this account to:
 - Role-based room access
 - File sharing (images, documents)
 - Admin dashboard for user/room management
-- Dark theme with Peaky Blinders aesthetic
+- Dark theme with BLINDERS aesthetic
 - PWA-ready frontend
 - Permanent message storage
 - Typing indicators

@@ -1,6 +1,6 @@
 # Blinders Secure Chat
 
-A hierarchical secure chat application with role-based access control, inspired by the Peaky Blinders theme.
+A hierarchical secure chat application with role-based access control, inspired by the BLINDERS theme.
 
 ## Architecture
 
@@ -24,7 +24,7 @@ A hierarchical secure chat application with role-based access control, inspired 
 - File sharing
 - Permanent message storage
 - Admin controls for user/room management
-- Dark theme with Peaky Blinders aesthetic
+- Dark theme with BLINDERS aesthetic
 
 ## Setup
 

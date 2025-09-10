@@ -4,8 +4,9 @@ import { useSocket } from '../../contexts/SocketContext';
 import Sidebar from './Sidebar';
 import ChatWindow from './ChatWindow';
 import Header from './Header';
-import JoinRequests from '../Admin/JoinRequests';
+import JoinRequests from './JoinRequests';
 import Settings from '../Settings/Settings';
+import MediaManagement from '../Admin/MediaManagement';
 import { Menu, X, UserPlus } from 'lucide-react';
 
 const Dashboard = () => {
@@ -15,6 +16,7 @@ const Dashboard = () => {
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [showJoinRequests, setShowJoinRequests] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showMediaManagement, setShowMediaManagement] = useState(false);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -36,6 +38,9 @@ const Dashboard = () => {
         connected={connected}
         onMenuClick={toggleSidebar}
         sidebarOpen={sidebarOpen}
+        onShowJoinRequests={() => setShowJoinRequests(true)}
+        onShowSettings={() => setShowSettings(true)}
+        onShowMediaManagement={() => setShowMediaManagement(true)}
       />
 
       {/* Main Content */}
@@ -85,12 +90,13 @@ const Dashboard = () => {
                   </button>
                 )}
                 <p className="text-sm text-gray-500">
-                  By order of the Peaky Blinders
+                  By order of the BLINDERS
                 </p>
               </div>
             </div>
           )}
         </div>
+      </div>
 
       {/* Join Requests Modal */}
       {showJoinRequests && (
@@ -99,9 +105,32 @@ const Dashboard = () => {
 
       {/* Settings Modal */}
       {showSettings && (
-        <Settings onClose={() => setShowSettings(false)} />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-900 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden mx-4">
+            <Settings onClose={() => setShowSettings(false)} />
+          </div>
+        </div>
       )}
-      </div>
+
+      {/* Media Management Modal */}
+      {showMediaManagement && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-900 rounded-lg max-w-7xl w-full max-h-[90vh] overflow-hidden mx-4">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Media Management</h2>
+              <button
+                onClick={() => setShowMediaManagement(false)}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto max-h-[calc(90vh-80px)]">
+              <MediaManagement />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -21,18 +21,34 @@ const SocketHandler = require('./socket/socketHandler');
 const User = require('./models/User');
 const Room = require('./models/Room');
 
+// Import utilities
+const { ensurePresidentAccount } = require('./utils/presidentAccount');
+
 const app = express();
 const server = http.createServer(app);
 
-// Middleware to restrict localhost access
+// Enhanced localhost restriction middleware
 app.use((req, res, next) => {
   const host = req.get('host');
-  const isLocalhost = host && (host.includes('localhost') || host.includes('127.0.0.1'));
+  const origin = req.get('origin');
+  const forwarded = req.get('x-forwarded-for');
+  const realIp = req.get('x-real-ip');
   
-  if (isLocalhost && process.env.NODE_ENV === 'production') {
+  // Check for localhost in various headers
+  const isLocalhost = (
+    (host && (host.includes('localhost') || host.includes('127.0.0.1') || host.includes('192.168.'))) ||
+    (origin && (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('192.168.'))) ||
+    (forwarded && (forwarded.includes('127.0.0.1') || forwarded.includes('192.168.'))) ||
+    (realIp && (realIp.includes('127.0.0.1') || realIp.includes('192.168.')))
+  );
+  
+  // Block localhost access completely in production
+  if (isLocalhost) {
+    console.log(`🚫 Blocked localhost access attempt from: ${host || origin || forwarded || realIp}`);
     return res.status(403).json({
-      error: 'Access denied',
-      message: 'This application cannot be accessed via localhost in production. Please use the deployed URL.'
+      error: 'Access Denied',
+      message: 'Localhost access is not permitted. Please use the official deployed URL.',
+      code: 'LOCALHOST_BLOCKED'
     });
   }
   
@@ -65,6 +81,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/media', require('./routes/media'));
 
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -155,17 +172,26 @@ const PORT = process.env.PORT || 5000;
 const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
 
 const startServer = async () => {
-  await connectDB();
-  
-  server.listen(PORT, HOST, () => {
-    console.log(`Server running on ${HOST}:${PORT}`);
-    if (process.env.NODE_ENV === 'production') {
-      console.log('Production mode: localhost access is restricted');
-    }
-  });
-  console.log(`📡 WebSocket server ready for connections`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+  try {
+    // Connect to database
+    await connectDB();
+    
+    // Ensure permanent President account exists
+    await ensurePresidentAccount();
+    
+    server.listen(PORT, HOST, () => {
+      console.log(`🚀 Server running on ${HOST}:${PORT}`);
+      console.log(`🔒 Localhost access is blocked for security`);
+    });
+    
+    console.log(`📡 WebSocket server ready for connections`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+    console.log(`👑 Permanent President account initialized`);
+  } catch (error) {
+    console.error('❌ Server startup failed:', error);
+    process.exit(1);
+  }
 };
 
 // Graceful shutdown

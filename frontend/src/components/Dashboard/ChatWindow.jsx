@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSocket } from '../../contexts/SocketContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { Send, Paperclip, Smile, MoreVertical } from 'lucide-react';
+import { Send, Smile, Paperclip, MoreVertical, Shield, Crown, Users, Image, X, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import axios from 'axios';
+import MediaUpload from '../Media/MediaUpload';
+import MediaGallery from '../Media/MediaGallery';
 
 const ChatWindow = ({ room }) => {
   const { user } = useAuth();
@@ -15,8 +17,10 @@ const ChatWindow = ({ room }) => {
     setMessages 
   } = useSocket();
   
-  const [messageInput, setMessageInput] = useState('');
+  const [message, setMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [showMediaUpload, setShowMediaUpload] = useState(false);
+  const [showMediaGallery, setShowMediaGallery] = useState(false);
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -73,19 +77,31 @@ const ChatWindow = ({ room }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleSendMessage = (e) => {
-    e.preventDefault();
-    
-    if (messageInput.trim()) {
-      sendMessage(messageInput.trim());
-      setMessageInput('');
+  const handleSendMessage = async () => {
+    if (message.trim() && room) {
+      await sendMessage(room._id, message.trim());
+      setMessage('');
       setIsTyping(false);
-      sendTyping(false);
     }
   };
 
+  const handleMediaUpload = (uploadedFiles) => {
+    // Send notification messages for uploaded files
+    uploadedFiles.forEach(file => {
+      const mediaMessage = {
+        type: 'media',
+        content: `📎 ${file.originalName}`,
+        mediaUrl: file.url,
+        mediaType: file.mediaType,
+        mediaId: file.id
+      };
+      sendMessage(room._id, JSON.stringify(mediaMessage));
+    });
+    setShowMediaUpload(false);
+  };
+
   const handleInputChange = (e) => {
-    setMessageInput(e.target.value);
+    setMessage(e.target.value);
     
     if (e.target.value.length > 0 && !isTyping) {
       setIsTyping(true);
@@ -96,17 +112,80 @@ const ChatWindow = ({ room }) => {
   };
 
   const formatMessageTime = (timestamp) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInHours = (now - date) / (1000 * 60 * 60);
-    
-    if (diffInHours < 24) {
-      return format(date, 'HH:mm');
-    } else if (diffInHours < 168) { // 7 days
-      return format(date, 'EEE HH:mm');
-    } else {
-      return format(date, 'MMM dd, HH:mm');
+    return format(new Date(timestamp), 'HH:mm');
+  };
+
+  const renderMessageContent = (message) => {
+    try {
+      // Try to parse as JSON for media messages
+      const parsedContent = JSON.parse(message.content);
+      if (parsedContent.type === 'media') {
+        return renderMediaMessage(parsedContent);
+      }
+    } catch (e) {
+      // Not JSON, render as regular text
     }
+    
+    return (
+      <p className="text-sm whitespace-pre-wrap break-words">
+        {typeof message.content === 'string' ? message.content : String(message.content || '')}
+      </p>
+    );
+  };
+
+  const renderMediaMessage = (mediaData) => {
+    const { mediaType, mediaUrl, content, mediaId } = mediaData;
+    
+    return (
+      <div className="space-y-2">
+        <p className="text-sm text-gray-300">{content}</p>
+        
+        {mediaType === 'image' && (
+          <div className="max-w-xs">
+            <img 
+              src={mediaUrl} 
+              alt="Shared image"
+              className="rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+              onClick={() => window.open(mediaUrl, '_blank')}
+            />
+          </div>
+        )}
+        
+        {mediaType === 'video' && (
+          <div className="max-w-xs">
+            <video 
+              src={mediaUrl} 
+              controls 
+              className="rounded-lg w-full"
+            />
+          </div>
+        )}
+        
+        {mediaType === 'audio' && (
+          <div className="max-w-xs">
+            <audio 
+              src={mediaUrl} 
+              controls 
+              className="w-full"
+            />
+          </div>
+        )}
+        
+        {(mediaType === 'document' || mediaType === 'other') && (
+          <div className="flex items-center space-x-2 p-2 bg-gray-700 rounded-lg max-w-xs">
+            <FileText className="w-5 h-5 text-blue-400" />
+            <a 
+              href={mediaUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300 text-sm truncate"
+            >
+              View File
+            </a>
+          </div>
+        )}
+      </div>
+    );
   };
 
   const getRoleEmoji = (role) => {
@@ -189,9 +268,7 @@ const ChatWindow = ({ room }) => {
                       ${isOwnMessage ? 'message-sent' : 'message-received'}
                     `}
                   >
-                    <p className="text-sm whitespace-pre-wrap break-words">
-                      {typeof message.content === 'string' ? message.content : String(message.content || '')}
-                    </p>
+                    {renderMessageContent(message)}
                     <p className={`text-xs mt-1 ${
                       isOwnMessage ? 'text-blinders-dark' : 'text-gray-400'
                     }`}>
@@ -228,17 +305,20 @@ const ChatWindow = ({ room }) => {
       {/* Message Input */}
       <div className="message-input-container">
         <form onSubmit={handleSendMessage} className="flex items-center space-x-3">
-          <button
-            type="button"
-            className="p-2 rounded-lg hover:bg-blinders-gray transition-colors duration-200"
-          >
-            <Paperclip className="h-5 w-5 text-gray-400" />
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowMediaUpload(!showMediaUpload)}
+              className="p-2 rounded-lg hover:bg-blinders-gray transition-colors duration-200"
+            >
+              <Paperclip className="h-5 w-5 text-gray-400" />
+            </button>
+          </div>
           
           <div className="flex-1 relative">
             <input
               type="text"
-              value={messageInput}
+              value={message}
               onChange={handleInputChange}
               placeholder={`Message ${room.name}...`}
               className="input-field w-full pr-10"
@@ -253,11 +333,20 @@ const ChatWindow = ({ room }) => {
           </div>
           
           <button
+            onClick={() => setShowMediaGallery(!showMediaGallery)}
+            type="button"
+            className="p-2 rounded-lg hover:bg-blinders-gray transition-colors duration-200"
+            title="View Media Gallery"
+          >
+            <Image className="h-5 w-5 text-gray-400" />
+          </button>
+          
+          <button
             type="submit"
-            disabled={!messageInput.trim()}
+            disabled={!message.trim()}
             className={`
               p-2 rounded-lg transition-all duration-200
-              ${messageInput.trim() 
+              ${message.trim() 
                 ? 'bg-blinders-gold text-blinders-black hover:bg-blinders-light-gold' 
                 : 'bg-blinders-gray text-gray-400 cursor-not-allowed'
               }
@@ -269,8 +358,49 @@ const ChatWindow = ({ room }) => {
         
         <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
           <span>End-to-end encrypted</span>
-          <span>{messageInput.length}/1000</span>
+          <span>{message.length}/1000</span>
         </div>
+
+        {/* Media Upload Panel */}
+        {showMediaUpload && (
+          <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Upload Files</h3>
+              <button
+                onClick={() => setShowMediaUpload(false)}
+                className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <MediaUpload
+              onUploadComplete={handleMediaUpload}
+              roomId={room?._id}
+              className="border-0 p-0 bg-transparent"
+            />
+          </div>
+        )}
+
+        {/* Media Gallery Panel */}
+        {showMediaGallery && (
+          <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Media Gallery</h3>
+              <button
+                onClick={() => setShowMediaGallery(false)}
+                className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="max-h-96 overflow-y-auto">
+              <MediaGallery
+                roomId={room?._id}
+                className="border-0 bg-transparent"
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

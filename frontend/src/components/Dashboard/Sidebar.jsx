@@ -174,7 +174,7 @@ const Sidebar = ({ onRoomSelect, selectedRoom, onClose }) => {
       {/* Footer */}
       <div className="mt-4 pt-4 border-t border-blinders-gray flex-shrink-0">
         <p className="text-xs text-gray-500 text-center">
-          By order of the Peaky Blinders
+          By order of the BLINDERS
         </p>
       </div>
     </div>

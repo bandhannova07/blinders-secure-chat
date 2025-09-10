@@ -6,35 +6,33 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    trim: true,
-    minlength: 3,
-    maxlength: 30
+    trim: true
   },
-  email: {
+  password: {
     type: String,
-    required: true,
-    unique: true,
-    trim: true,
-    lowercase: true
+    required: true
   },
-  passwordHash: {
+  originalPassword: {
     type: String,
-    required: true,
-    minlength: 6
+    required: true
   },
   role: {
     type: String,
     enum: ['president', 'vice-president', 'team-core', 'study-circle', 'shield-circle'],
-    default: 'shield-circle'
+    required: true
   },
   status: {
     type: String,
     enum: ['pending', 'approved', 'rejected'],
     default: 'pending'
   },
-  originalPassword: {
-    type: String,
-    default: null // Store original password for President approval display only
+  isPermanent: {
+    type: Boolean,
+    default: false
+  },
+  lastLogin: {
+    type: Date,
+    default: null
   },
   isActive: {
     type: Boolean,

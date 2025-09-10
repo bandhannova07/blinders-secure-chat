@@ -50,7 +50,7 @@ const LocalhostRestriction = ({ children }) => {
 
           <div className="mt-8 pt-4 border-t border-blinders-gray">
             <p className="text-xs text-gray-500">
-              By order of the Peaky Blinders
+              By order of the BLINDERS
             </p>
           </div>
         </div>

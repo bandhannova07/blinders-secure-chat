@@ -1,10 +1,9 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const speakeasy = require('speakeasy');
-const QRCode = require('qrcode');
+const bcrypt = require('bcryptjs');
 const User = require('../models/User');
-const Notification = require('../models/Notification');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { validatePresidentProtection, validatePresidentRoleAssignment, isPermanentPresident } = require('../utils/presidentAccount');
 
 const router = express.Router();
 
@@ -74,6 +73,76 @@ router.post('/signup', async (req, res) => {
   }
 });
 
+// Login route
+router.post('/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' });
+    }
+
+    // Find user by username
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Check if user is banned
+    if (user.isBanned) {
+      return res.status(403).json({ error: 'Account is banned' });
+    }
+
+    // Check password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Update last login for permanent President
+    if (isPermanentPresident(user)) {
+      user.lastLogin = new Date();
+      await user.save();
+      console.log(' Permanent President logged in');
+    }
+
+    // Check if user is approved (except for president)
+    if (user.role !== 'president' && user.status !== 'approved') {
+      return res.status(403).json({ 
+        error: 'Account pending approval',
+        message: 'Your account is waiting for approval from the President'
+      });
+    }
+
+    if (user.status === 'rejected') {
+      return res.status(403).json({ 
+        error: 'Account rejected',
+        message: 'Your account has been rejected by the President'
+      });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user._id, username: user.username, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+        lastSeen: user.lastSeen
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Register new user (admin only - kept for backward compatibility)
 router.post('/register', authenticateToken, requireAdmin, async (req, res) => {
   try {
@@ -131,88 +200,27 @@ router.post('/register', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
-// Login
-router.post('/login', async (req, res) => {
+// Logout route
+router.post('/logout', authenticateToken, (req, res) => {
+  res.json({ message: 'Logged out successfully' });
+});
+
+// Get current user profile
+router.get('/profile', authenticateToken, async (req, res) => {
   try {
-    const { username, password, twoFactorToken } = req.body;
-
-    // Find user
-    const user = await User.findOne({ username });
+    const user = await User.findById(req.user.userId).select('-password -originalPassword');
     if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(404).json({ error: 'User not found' });
     }
-
-    // Check if user is banned or inactive
-    if (user.isBanned) {
-      return res.status(403).json({ error: 'Account is banned' });
-    }
-
-    if (!user.isActive) {
-      return res.status(403).json({ error: 'Account is inactive' });
-    }
-
-    // Check if user is approved
-    if (user.status === 'pending') {
-      return res.status(403).json({ 
-        error: 'Please wait, your request is pending President\'s approval.',
-        status: 'pending'
-      });
-    }
-
-    if (user.status === 'rejected') {
-      return res.status(403).json({ 
-        error: 'Your request has been declined by the President.',
-        status: 'rejected'
-      });
-    }
-
-    // Verify password
-    const isValidPassword = await user.comparePassword(password);
-    if (!isValidPassword) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    // Check 2FA if enabled
-    if (user.twoFactorEnabled) {
-      if (!twoFactorToken) {
-        return res.status(200).json({ 
-          requiresTwoFactor: true,
-          message: 'Two-factor authentication required'
-        });
-      }
-
-      const verified = speakeasy.totp.verify({
-        secret: user.twoFactorSecret,
-        encoding: 'base32',
-        token: twoFactorToken,
-        window: 2
-      });
-
-      if (!verified) {
-        return res.status(401).json({ error: 'Invalid two-factor authentication code' });
-      }
-    }
-
-    // Update last seen
-    user.lastSeen = new Date();
-    await user.save();
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id, username: user.username, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
-    );
 
     res.json({
-      token,
       user: {
         id: user._id,
         username: user.username,
-        email: user.email,
         role: user.role,
-        twoFactorEnabled: user.twoFactorEnabled,
-        lastSeen: user.lastSeen
+        status: user.status,
+        lastSeen: user.lastSeen,
+        createdAt: user.createdAt
       }
     });
   } catch (error) {
@@ -499,9 +507,18 @@ router.put('/update-username', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Username is already taken' });
     }
 
-    // Get old username for message history update
-    const oldUser = await User.findById(userId).select('username');
-    const oldUsername = oldUser.username;
+    // Get current user to check protection
+    const currentUser = await User.findById(userId);
+    if (!currentUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Protect permanent President account from modification
+    try {
+      validatePresidentProtection(userId, currentUser);
+    } catch (error) {
+      return res.status(403).json({ error: error.message });
+    }
 
     // Update username
     const user = await User.findByIdAndUpdate(
@@ -513,10 +530,6 @@ router.put('/update-username', authenticateToken, async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-
-    // Update message history to reflect username change
-    // Note: We don't update the actual messages since they are encrypted,
-    // but the sender information will be updated automatically through population
 
     res.json({ 
       success: true, 
@@ -552,6 +565,13 @@ router.put('/change-password', authenticateToken, async (req, res) => {
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Protect permanent President account from password change
+    try {
+      validatePresidentProtection(userId, user);
+    } catch (error) {
+      return res.status(403).json({ error: error.message });
     }
 
     // Verify current password

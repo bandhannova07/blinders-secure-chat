@@ -7,7 +7,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Peaky Blinders dark theme
+        // BLINDERS dark theme
         'blinders': {
           'black': '#0a0a0a',
           'dark': '#1a1a1a',
