@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: blinders-secure-chat-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        fromDatabase:
+          name: blinders-mongodb
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: FRONTEND_URL
+        value: https://blinders-secure-chat.netlify.app
+
+databases:
+  - name: blinders-mongodb
+    databaseName: blinders-secure-chat
+    user: blinders-user

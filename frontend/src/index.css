@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-blinders-black text-white font-blinders;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-blinders-gold hover:bg-blinders-light-gold text-blinders-black font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105;
+  }
+  
+  .btn-secondary {
+    @apply bg-blinders-gray hover:bg-blinders-light-gray text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200;
+  }
+  
+  .btn-danger {
+    @apply bg-blinders-red hover:bg-blinders-light-red text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200;
+  }
+  
+  .input-field {
+    @apply bg-blinders-gray border border-blinders-light-gray rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blinders-gold focus:border-transparent transition-all duration-200;
+  }
+  
+  .card {
+    @apply bg-blinders-dark border border-blinders-gray rounded-lg p-4 shadow-lg;
+  }
+  
+  .message-bubble {
+    @apply rounded-lg px-4 py-2 max-w-xs break-words;
+  }
+  
+  .message-sent {
+    @apply bg-blinders-gold text-blinders-black ml-auto;
+  }
+  
+  .message-received {
+    @apply bg-blinders-gray text-white mr-auto;
+  }
+  
+  .sidebar {
+    @apply bg-blinders-dark border-r border-blinders-gray h-full transition-all duration-300 ease-in-out;
+  }
+  
+  .room-item {
+    @apply flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-all duration-200 hover:bg-blinders-gray;
+  }
+  
+  .room-item.active {
+    @apply bg-blinders-gold text-blinders-black;
+  }
+  
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #d4af37 #2a2a2a;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: #2a2a2a;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #d4af37;
+    border-radius: 3px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: #f4d03f;
+  }
+}
+
+@layer utilities {
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  }
+  
+  .glow-gold {
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+  }
+  
+  .glow-gold-strong {
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.8);
+  }
+}
