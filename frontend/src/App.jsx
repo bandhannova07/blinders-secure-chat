@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SocketProvider } from './contexts/SocketContext';
-import AuthWrapper from './components/Auth/AuthWrapper';
+import Login from './components/Auth/Login';
 import Dashboard from './components/Dashboard/Dashboard';
 import AdminPanel from './components/Admin/AdminPanel';
 import LocalhostRestriction from './components/LocalhostRestriction';
@@ -46,7 +46,7 @@ function App() {
 }
 
 function AppRoutes() {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
@@ -62,14 +62,18 @@ function AppRoutes() {
   return (
     <Routes>
       <Route 
-        path="/" 
+        path="/login" 
+        element={!user ? <Login /> : <Navigate to="/dashboard" replace />} 
+      />
+      <Route 
+        path="/dashboard" 
         element={
-          isAuthenticated ? (
+          user ? (
             <SocketProvider>
               <Dashboard />
             </SocketProvider>
           ) : (
-            <AuthWrapper />
+            <Navigate to="/login" replace />
           )
         } 
       />
@@ -81,11 +85,12 @@ function AppRoutes() {
               <AdminPanel />
             </SocketProvider>
           ) : (
-            <Navigate to="/" replace />
+            <Navigate to="/dashboard" replace />
           )
         } 
       />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }

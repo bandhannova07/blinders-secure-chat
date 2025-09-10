@@ -1,21 +1,26 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Eye, EyeOff, Shield, Lock, Key } from 'lucide-react';
+import { Eye, EyeOff, Shield, Crown } from 'lucide-react';
 import toast from 'react-hot-toast';
+import SecretCodeSetup from './SecretCodeSetup';
+import SecretCodeInput from './SecretCodeInput';
 
-const Login = ({ onLoginSuccess }) => {
+const Login = () => {
   const { login, signup } = useAuth();
   const [isSignup, setIsSignup] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     password: '',
-    secretCode: ''
+    twoFactorToken: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [requiresSecretCode, setRequiresSecretCode] = useState(false);
+  const [requiresTwoFactor, setRequiresTwoFactor] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
+  const [requiresSecretCode, setRequiresSecretCode] = useState(false);
+  const [requiresSecretCodeSetup, setRequiresSecretCodeSetup] = useState(false);
+  const [loginCredentials, setLoginCredentials] = useState({ username: '', password: '' });
 
   const handleChange = (e) => {
     setFormData({
@@ -41,14 +46,20 @@ const Login = ({ onLoginSuccess }) => {
         const result = await login(
           formData.username, 
           formData.password, 
-          requiresSecretCode ? formData.secretCode : null
+          requiresTwoFactor ? formData.twoFactorToken : null
         );
 
-        if (result.requiresSecretCode) {
+        if (result.requiresTwoFactor) {
+          setRequiresTwoFactor(true);
+          toast.success('Enter your 2FA code to continue');
+        } else if (result.requiresSecretCode) {
+          setLoginCredentials({ username: formData.username, password: formData.password });
           setRequiresSecretCode(true);
           toast.success('Enter your secret code to continue');
-        } else if (result.needsSecretCodeSetup) {
-          onLoginSuccess && onLoginSuccess(result);
+        } else if (result.requiresSecretCodeSetup) {
+          setLoginCredentials({ username: formData.username, password: formData.password });
+          setRequiresSecretCodeSetup(true);
+          toast.success('Please set up your secret code');
         }
       }
     } catch (error) {
@@ -61,12 +72,63 @@ const Login = ({ onLoginSuccess }) => {
     }
   };
 
+  const handleSecretCodeSubmit = async (secretCode) => {
+    setLoading(true);
+    try {
+      await login(loginCredentials.username, loginCredentials.password, null, secretCode);
+      toast.success('Welcome, President!');
+    } catch (error) {
+      console.error('Secret code login error:', error);
+      toast.error(error.message || 'Invalid secret code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSecretCodeSetupComplete = () => {
+    setRequiresSecretCodeSetup(false);
+    setRequiresSecretCode(false);
+    setFormData({ username: '', email: '', password: '', twoFactorToken: '' });
+    setLoginCredentials({ username: '', password: '' });
+    toast.success('Secret code setup completed! Please login again.');
+  };
+
+  const handleBackToLogin = () => {
+    setRequiresSecretCode(false);
+    setRequiresSecretCodeSetup(false);
+    setRequiresTwoFactor(false);
+    setLoginCredentials({ username: '', password: '' });
+  };
+
   const toggleMode = () => {
     setIsSignup(!isSignup);
-    setFormData({ username: '', email: '', password: '', secretCode: '' });
-    setRequiresSecretCode(false);
+    setFormData({ username: '', email: '', password: '', twoFactorToken: '' });
+    setRequiresTwoFactor(false);
     setPendingApproval(false);
   };
+
+  // Show secret code setup screen
+  if (requiresSecretCodeSetup) {
+    return (
+      <SecretCodeSetup
+        username={loginCredentials.username}
+        password={loginCredentials.password}
+        onSetupComplete={handleSecretCodeSetupComplete}
+        onBack={handleBackToLogin}
+      />
+    );
+  }
+
+  // Show secret code input screen
+  if (requiresSecretCode) {
+    return (
+      <SecretCodeInput
+        onSubmit={handleSecretCodeSubmit}
+        onBack={handleBackToLogin}
+        loading={loading}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blinders-black via-blinders-dark to-blinders-gray">
@@ -173,27 +235,25 @@ const Login = ({ onLoginSuccess }) => {
               </div>
             </div>
 
-            {requiresSecretCode && (
+            {requiresTwoFactor && (
               <div className="animate-fade-in">
-                <label htmlFor="secretCode" className="block text-sm font-medium text-gray-300 mb-2">
-                  <div className="flex items-center space-x-2">
-                    <Key className="h-4 w-4 text-blinders-gold" />
-                    <span>President Secret Code</span>
-                  </div>
+                <label htmlFor="twoFactorToken" className="block text-sm font-medium text-gray-300 mb-2">
+                  Two-Factor Authentication Code
                 </label>
                 <input
-                  type="password"
-                  id="secretCode"
-                  name="secretCode"
-                  value={formData.secretCode}
+                  type="text"
+                  id="twoFactorToken"
+                  name="twoFactorToken"
+                  value={formData.twoFactorToken}
                   onChange={handleChange}
                   className="input-field w-full"
-                  placeholder="Enter your secret code"
+                  placeholder="Enter 6-digit code"
+                  maxLength="6"
                   required
                   disabled={loading}
                 />
                 <p className="text-xs text-gray-400 mt-1">
-                  Enter your President secret code for enhanced security
+                  Enter the code from your authenticator app
                 </p>
               </div>
             )}

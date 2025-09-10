@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSocket } from '../../contexts/SocketContext';
-import UserDirectory from './UserDirectory';
 import axios from 'axios';
-import { Crown, Sword, Key, BookOpen, Shield, X } from 'lucide-react';
+import { Crown, Sword, Key, BookOpen, Shield, X, Users, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Sidebar = ({ onRoomSelect, selectedRoom, onClose }) => {
   const { user } = useAuth();
   const { joinRoom, currentRoom } = useSocket();
   const [rooms, setRooms] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
+  const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [loading, setLoading] = useState(true);
+  const [usersLoading, setUsersLoading] = useState(true);
 
   const roleIcons = {
     'president': Crown,
@@ -38,7 +40,36 @@ const Sidebar = ({ onRoomSelect, selectedRoom, onClose }) => {
 
   useEffect(() => {
     fetchRooms();
+    fetchUsers();
   }, []);
+
+  // Listen for real-time user status updates
+  useEffect(() => {
+    const { socket } = useSocket();
+    if (socket) {
+      socket.on('user-online', (data) => {
+        setOnlineUsers(prev => new Set([...prev, data.userId]));
+      });
+
+      socket.on('user-offline', (data) => {
+        setOnlineUsers(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(data.userId);
+          return newSet;
+        });
+      });
+
+      socket.on('users-status', (data) => {
+        setOnlineUsers(new Set(data.onlineUsers));
+      });
+
+      return () => {
+        socket.off('user-online');
+        socket.off('user-offline');
+        socket.off('users-status');
+      };
+    }
+  }, [useSocket]);
 
   const fetchRooms = async () => {
     try {
@@ -50,6 +81,34 @@ const Sidebar = ({ onRoomSelect, selectedRoom, onClose }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get('/users/directory');
+      setAllUsers(response.data.users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  const formatLastSeen = (lastSeen) => {
+    if (!lastSeen) return 'Never';
+    
+    const now = new Date();
+    const lastSeenDate = new Date(lastSeen);
+    const diffMs = now - lastSeenDate;
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return lastSeenDate.toLocaleDateString();
   };
 
   const handleRoomClick = (room) => {
@@ -70,6 +129,9 @@ const Sidebar = ({ onRoomSelect, selectedRoom, onClose }) => {
 
   // Sort rooms by hierarchy (highest level first)
   const sortedRooms = rooms.sort((a, b) => getRoleLevel(b.role) - getRoleLevel(a.role));
+  
+  // Sort users by hierarchy (highest level first)
+  const sortedUsers = allUsers.sort((a, b) => getRoleLevel(b.role) - getRoleLevel(a.role));
 
   if (loading) {
     return (
@@ -115,65 +177,130 @@ const Sidebar = ({ onRoomSelect, selectedRoom, onClose }) => {
       </div>
 
       {/* Rooms List */}
-      <div className="space-y-2 flex-1 overflow-y-auto">
+      <div className="space-y-2 mb-6">
         <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
           Available Rooms
         </h3>
         
         {sortedRooms.length === 0 ? (
-          <div className="text-center py-8">
-            <Shield className="h-12 w-12 text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-400">No rooms available</p>
+          <div className="text-center py-4">
+            <Shield className="h-8 w-8 text-gray-600 mx-auto mb-2" />
+            <p className="text-gray-400 text-sm">No rooms available</p>
           </div>
         ) : (
-          sortedRooms.map((room) => {
-            const IconComponent = roleIcons[room.role];
-            const isSelected = selectedRoom?.id === room.id;
-            const isCurrentRoom = currentRoom?.roomId === room.id;
-            
-            return (
-              <div
-                key={room.id}
-                onClick={() => handleRoomClick(room)}
-                className={`
-                  room-item cursor-pointer p-3 rounded-lg transition-all duration-200
-                  ${isSelected || isCurrentRoom 
-                    ? 'bg-blinders-gold text-blinders-black' 
-                    : 'hover:bg-blinders-gray'
-                  }
-                  ${isCurrentRoom ? 'glow-gold' : ''}
-                `}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="flex-shrink-0">
-                    <div className="text-2xl">{roleEmojis[room.role]}</div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`font-semibold truncate ${
-                      isSelected || isCurrentRoom ? 'text-blinders-black' : 'text-white'
-                    }`}>
-                      {room.name}
-                    </p>
-                    <p className={`text-sm truncate ${
-                      isSelected || isCurrentRoom ? 'text-blinders-dark' : 'text-gray-400'
-                    }`}>
-                      {room.description || `${room.role.replace('-', ' ')} level`}
-                    </p>
-                  </div>
-                  {isCurrentRoom && (
+          <div className="space-y-1 max-h-48 overflow-y-auto">
+            {sortedRooms.map((room) => {
+              const IconComponent = roleIcons[room.role];
+              const isSelected = selectedRoom?.id === room.id;
+              const isCurrentRoom = currentRoom?.roomId === room.id;
+              
+              return (
+                <div
+                  key={room.id}
+                  onClick={() => handleRoomClick(room)}
+                  className={`
+                    room-item cursor-pointer p-2 rounded-lg transition-all duration-200
+                    ${isSelected || isCurrentRoom 
+                      ? 'bg-blinders-gold text-blinders-black' 
+                      : 'hover:bg-blinders-gray'
+                    }
+                    ${isCurrentRoom ? 'glow-gold' : ''}
+                  `}
+                >
+                  <div className="flex items-center space-x-2">
                     <div className="flex-shrink-0">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <div className="text-lg">{roleEmojis[room.role]}</div>
                     </div>
-                  )}
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-medium truncate text-sm ${
+                        isSelected || isCurrentRoom ? 'text-blinders-black' : 'text-white'
+                      }`}>
+                        {room.name}
+                      </p>
+                    </div>
+                    {isCurrentRoom && (
+                      <div className="flex-shrink-0">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })
+              );
+            })}
+          </div>
         )}
       </div>
 
       {/* User Directory */}
-      <UserDirectory />
+      <div className="space-y-2 flex-1 overflow-y-auto">
+        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center">
+          <Users className="h-4 w-4 mr-2" />
+          User Directory
+        </h3>
+        
+        {usersLoading ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="animate-pulse">
+                <div className="h-12 bg-blinders-gray rounded-lg"></div>
+              </div>
+            ))}
+          </div>
+        ) : sortedUsers.length === 0 ? (
+          <div className="text-center py-4">
+            <Users className="h-8 w-8 text-gray-600 mx-auto mb-2" />
+            <p className="text-gray-400 text-sm">No users found</p>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {sortedUsers.map((userData) => {
+              const isOnline = onlineUsers.has(userData._id);
+              const isCurrentUser = userData._id === user?.id;
+              
+              return (
+                <div
+                  key={userData._id}
+                  className={`
+                    p-2 rounded-lg transition-all duration-200
+                    ${isCurrentUser ? 'bg-blinders-gold bg-opacity-20 border border-blinders-gold' : 'hover:bg-blinders-gray'}
+                  `}
+                >
+                  <div className="flex items-center space-x-2">
+                    <div className="flex-shrink-0 relative">
+                      <div className="text-lg">{roleEmojis[userData.role]}</div>
+                      <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-blinders-black ${
+                        isOnline ? 'bg-green-500' : 'bg-gray-500'
+                      }`}></div>
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <p className={`font-medium truncate text-sm ${
+                          isCurrentUser ? 'text-blinders-gold' : 'text-white'
+                        }`}>
+                          {userData.username}
+                          {isCurrentUser && <span className="text-xs ml-1">(You)</span>}
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <p className={`text-xs capitalize truncate ${roleColors[userData.role]?.split(' ')[0] || 'text-gray-400'}`}>
+                          {userData.role?.replace('-', ' ')}
+                        </p>
+                        
+                        <div className="flex items-center space-x-1 text-xs text-gray-500">
+                          <Clock className="h-3 w-3" />
+                          <span>{isOnline ? 'Online' : formatLastSeen(userData.lastSeen)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Footer */}
       <div className="mt-4 pt-4 border-t border-blinders-gray flex-shrink-0">

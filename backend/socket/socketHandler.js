@@ -8,6 +8,7 @@ class SocketHandler {
     this.io = io;
     this.connectedUsers = new Map(); // userId -> socketId
     this.userRooms = new Map(); // userId -> Set of roomIds
+    this.onlineUsers = new Set(); // Set of online userIds
     
     this.setupSocketHandlers();
   }
@@ -52,18 +53,11 @@ class SocketHandler {
           socket.userId = user._id.toString();
           socket.user = user;
           this.connectedUsers.set(socket.userId, socket.id);
+          this.onlineUsers.add(socket.userId);
           
-          // Update user's last seen and online status
+          // Update user's last seen
           user.lastSeen = new Date();
-          user.isOnline = true;
           await user.save();
-          
-          // Broadcast user online status to all connected users
-          this.io.emit('user-status-update', {
-            userId: user._id.toString(),
-            isOnline: true,
-            lastSeen: user.lastSeen
-          });
 
           socket.emit('authenticated', { 
             user: {
@@ -72,6 +66,12 @@ class SocketHandler {
               role: user.role
             }
           });
+
+          // Broadcast user online status
+          this.io.emit('user-online', { userId: socket.userId });
+          
+          // Send current online users to the newly connected user
+          socket.emit('users-status', { onlineUsers: Array.from(this.onlineUsers) });
 
           console.log(`User authenticated: ${user.username} (${socket.id})`);
           
@@ -238,27 +238,22 @@ class SocketHandler {
 
       // Handle disconnect
       socket.on('disconnect', async () => {
-        if (socket.userId && socket.user) {
+        if (socket.userId) {
           this.connectedUsers.delete(socket.userId);
           this.userRooms.delete(socket.userId);
+          this.onlineUsers.delete(socket.userId);
           
-          // Update user offline status in database
-          try {
-            const User = require('../models/User');
-            await User.findByIdAndUpdate(socket.userId, {
-              isOnline: false,
-              lastSeen: new Date()
-            });
-            
-            // Broadcast user offline status to all connected users
-            this.io.emit('user-status-update', {
-              userId: socket.userId,
-              isOnline: false,
-              lastSeen: new Date()
-            });
-          } catch (error) {
-            console.error('Error updating user offline status:', error);
+          // Update user's last seen timestamp
+          if (socket.user) {
+            try {
+              await User.findByIdAndUpdate(socket.userId, { lastSeen: new Date() });
+            } catch (error) {
+              console.error('Error updating last seen on disconnect:', error);
+            }
           }
+          
+          // Broadcast user offline status
+          this.io.emit('user-offline', { userId: socket.userId });
           
           // Notify all rooms that user disconnected
           socket.broadcast.emit('user-disconnected', {

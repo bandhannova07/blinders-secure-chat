@@ -72,38 +72,38 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, [token]);
 
-  const login = async (username, password, secretCode = null) => {
+  const login = async (username, password, twoFactorToken = null, secretCode = null) => {
     try {
       const response = await axios.post('/auth/login', {
         username,
         password,
+        twoFactorToken,
         secretCode
       });
 
-      if (response.data.requiresSecretCode) {
+      if (response.data.success) {
+        const { token, user } = response.data;
+        
+        // Store token in localStorage
+        localStorage.setItem('authToken', token);
+        
+        // Set user state
+        setUser(user);
+        setIsAuthenticated(true);
+        
+        return { success: true, user };
+      } else if (response.data.requiresTwoFactor) {
+        return { requiresTwoFactor: true };
+      } else if (response.data.requiresSecretCode) {
         return { requiresSecretCode: true };
+      } else if (response.data.requiresSecretCodeSetup) {
+        return { requiresSecretCodeSetup: true };
+      } else {
+        throw new Error(response.data.error || 'Login failed');
       }
-
-      const { token, user } = response.data;
-      localStorage.setItem('authToken', token);
-      setUser(user);
-      setIsAuthenticated(true);
-      
-      // Check if President needs to setup secret code
-      if (user.role === 'president' && !user.hasSecretCode) {
-        return { user, needsSecretCodeSetup: true };
-      }
-      
-      toast.success(`Welcome back, ${user.username}!`);
-      return { user };
     } catch (error) {
-      const errorMessage = error.response?.data?.error || 'Login failed';
-      
-      if (error.response?.data?.requiresSecretCode) {
-        return { requiresSecretCode: true };
-      }
-      
-      toast.error(errorMessage);
+      console.error('Login error:', error);
+      const errorMessage = error.response?.data?.error || error.message || 'Login failed';
       throw new Error(errorMessage);
     }
   };
