@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://blinders-secure-chat-backend.onrender.com';
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 // Configure axios defaults
 axios.defaults.baseURL = API_BASE_URL;

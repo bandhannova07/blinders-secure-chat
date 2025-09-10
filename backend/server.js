@@ -25,7 +25,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "https://blinders-secure-chat.netlify.app",
+    origin: process.env.FRONTEND_URL,
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -35,7 +35,7 @@ const io = socketIo(server, {
 app.use(helmet());
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'https://blinders-secure-chat.netlify.app',
+  origin: process.env.FRONTEND_URL,
   credentials: true
 }));
 
@@ -67,7 +67,7 @@ const socketHandler = new SocketHandler(io);
 // Database connection
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://bandhannova_mongodb_07:JcL2%40uci5w6JhBE@blinders-secure-chat.he477fw.mongodb.net/?retryWrites=true&w=majority&appName=blinders-secure-chat', {
+    await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
