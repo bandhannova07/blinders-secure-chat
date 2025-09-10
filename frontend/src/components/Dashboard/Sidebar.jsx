@@ -5,7 +5,7 @@ import axios from 'axios';
 import { Crown, Sword, Key, BookOpen, Shield, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const Sidebar = ({ onRoomSelect, selectedRoom, onToggleSidebar, onOpenSettings }) => {
+const Sidebar = ({ onRoomSelect, selectedRoom, onClose }) => {
   const { user } = useAuth();
   const { joinRoom, currentRoom } = useSocket();
   const [rooms, setRooms] = useState([]);
@@ -91,7 +91,7 @@ const Sidebar = ({ onRoomSelect, selectedRoom, onToggleSidebar, onOpenSettings }
   }
 
   return (
-    <div className="sidebar w-80 p-4">
+    <div className="sidebar w-80 p-4 h-full overflow-y-auto flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-blinders-gold">Rooms</h2>
@@ -103,28 +103,18 @@ const Sidebar = ({ onRoomSelect, selectedRoom, onToggleSidebar, onOpenSettings }
       {/* User Info */}
       <div className="mb-6 p-3 bg-blinders-gray rounded-lg border border-blinders-light-gray">
         <div className="flex items-center space-x-3">
-          <div className="text-2xl flex-shrink-0">{roleEmojis[user?.role]}</div>
-          <div className="flex-1 min-w-0 overflow-hidden">
-            <p className="font-semibold text-white text-sm break-words">{user?.username}</p>
-            <p className={`text-xs capitalize break-words ${roleColors[user?.role]?.split(' ')[0]}`}>
+          <div className="text-2xl">{roleEmojis[user?.role]}</div>
+          <div>
+            <p className="font-semibold text-white">{user?.username}</p>
+            <p className={`text-sm capitalize ${roleColors[user?.role]?.split(' ')[0]}`}>
               {user?.role?.replace('-', ' ')}
             </p>
           </div>
-          <button
-            onClick={onOpenSettings}
-            className="text-gray-400 hover:text-blinders-gold transition-colors p-1 flex-shrink-0"
-            title="Settings"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </button>
         </div>
       </div>
 
       {/* Rooms List */}
-      <div className="space-y-2">
+      <div className="space-y-2 flex-1 overflow-y-auto">
         <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
           Available Rooms
         </h3>
@@ -157,13 +147,13 @@ const Sidebar = ({ onRoomSelect, selectedRoom, onToggleSidebar, onOpenSettings }
                   <div className="flex-shrink-0">
                     <div className="text-2xl">{roleEmojis[room.role]}</div>
                   </div>
-                  <div className="flex-1 min-w-0 overflow-hidden">
-                    <p className={`font-semibold text-sm leading-tight break-words ${
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-semibold truncate ${
                       isSelected || isCurrentRoom ? 'text-blinders-black' : 'text-white'
                     }`}>
                       {room.name}
                     </p>
-                    <p className={`text-xs leading-tight break-words mt-1 ${
+                    <p className={`text-sm truncate ${
                       isSelected || isCurrentRoom ? 'text-blinders-dark' : 'text-gray-400'
                     }`}>
                       {room.description || `${room.role.replace('-', ' ')} level`}
@@ -182,7 +172,7 @@ const Sidebar = ({ onRoomSelect, selectedRoom, onToggleSidebar, onOpenSettings }
       </div>
 
       {/* Footer */}
-      <div className="mt-8 pt-4 border-t border-blinders-gray">
+      <div className="mt-4 pt-4 border-t border-blinders-gray flex-shrink-0">
         <p className="text-xs text-gray-500 text-center">
           By order of the Peaky Blinders
         </p>

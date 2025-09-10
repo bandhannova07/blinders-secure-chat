@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
 
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // Configure axios defaults
 axios.defaults.baseURL = API_BASE_URL;
@@ -58,17 +58,12 @@ export const AuthProvider = ({ children }) => {
     const checkAuth = async () => {
       if (token) {
         try {
-          const response = await axios.get('/api/auth/me', {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          const response = await axios.get('/auth/profile');
           setUser(response.data.user);
-          setIsAuthenticated(true);
         } catch (error) {
           console.error('Auth check failed:', error);
           localStorage.removeItem('blinders_token');
           setToken(null);
-          setUser(null);
-          setIsAuthenticated(false);
         }
       }
       setLoading(false);
@@ -79,7 +74,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password, twoFactorToken = null) => {
     try {
-      const response = await axios.post('/api/auth/login', {
+      const response = await axios.post('/auth/login', {
         username,
         password,
         twoFactorToken
@@ -105,19 +100,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('blinders_token');
+    setToken(null);
     setUser(null);
-    setIsAuthenticated(false);
     toast.success('Logged out successfully');
-  };
-
-  const updateUser = (updatedUser) => {
-    setUser(updatedUser);
   };
 
   const signup = async (username, email, password) => {
     try {
-      const response = await axios.post('/api/auth/signup', {
+      const response = await axios.post('/auth/signup', {
         username,
         email,
         password
@@ -184,17 +175,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUser = (updatedUser) => {
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  };
+
   const value = {
     user,
-    isAuthenticated,
-    isLoading: loading,
     login,
     logout,
     register,
-    setup2FA,
-    verify2FA,
     signup,
-    updateUser
+    updateUser,
+    loading
   };
 
   return (
@@ -203,5 +196,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-
-export { AuthContext };

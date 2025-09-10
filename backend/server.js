@@ -23,19 +23,36 @@ const Room = require('./models/Room');
 
 const app = express();
 const server = http.createServer(app);
+
+// Middleware to restrict localhost access
+app.use((req, res, next) => {
+  const host = req.get('host');
+  const isLocalhost = host && (host.includes('localhost') || host.includes('127.0.0.1'));
+  
+  if (isLocalhost && process.env.NODE_ENV === 'production') {
+    return res.status(403).json({
+      error: 'Access denied',
+      message: 'This application cannot be accessed via localhost in production. Please use the deployed URL.'
+    });
+  }
+  
+  next();
+});
 const io = socketIo(server, {
   cors: {
-    origin: process.env.FRONTEND_URL,
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
     methods: ["GET", "POST"],
     credentials: true
   }
 });
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false // Disable for development
+}));
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL,
+  origin: process.env.FRONTEND_URL || "http://localhost:3000",
   credentials: true
 }));
 
@@ -67,7 +84,7 @@ const socketHandler = new SocketHandler(io);
 // Database connection
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI, {
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/blinders-secure-chat', {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
@@ -135,16 +152,20 @@ app.use('*', (req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 5000;
+const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
 
 const startServer = async () => {
   await connectDB();
   
-  server.listen(PORT, () => {
-    console.log(`🚀 Blinders Secure Chat Backend running on port ${PORT}`);
-    console.log(`📡 WebSocket server ready for connections`);
-    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+  server.listen(PORT, HOST, () => {
+    console.log(`Server running on ${HOST}:${PORT}`);
+    if (process.env.NODE_ENV === 'production') {
+      console.log('Production mode: localhost access is restricted');
+    }
   });
+  console.log(`📡 WebSocket server ready for connections`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
 };
 
 // Graceful shutdown

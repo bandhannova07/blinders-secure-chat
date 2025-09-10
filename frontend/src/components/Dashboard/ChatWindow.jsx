@@ -125,7 +125,7 @@ const ChatWindow = ({ room }) => {
   }
 
   return (
-    <div className="flex flex-col h-full bg-blinders-black">
+    <div className="flex-1 chat-container bg-blinders-dark">
       {/* Chat Header */}
       <div className="bg-blinders-dark border-b border-blinders-gray px-6 py-4">
         <div className="flex items-center justify-between">
@@ -144,8 +144,8 @@ const ChatWindow = ({ room }) => {
         </div>
       </div>
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+      {/* Messages */}
+      <div className="messages-container scrollbar-thin">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
@@ -167,12 +167,12 @@ const ChatWindow = ({ room }) => {
           </div>
         ) : (
           messages.map((message) => {
-            const isOwnMessage = message.sender._id === user?.id || message.sender.id === user?.id;
+            const isOwnMessage = message.sender.id === user?.id;
             
             return (
               <div
-                key={message._id || message.id}
-                className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} mb-4`}
+                key={message.id}
+                className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
               >
                 <div className={`max-w-xs lg:max-w-md ${isOwnMessage ? 'order-2' : 'order-1'}`}>
                   {!isOwnMessage && (
@@ -189,7 +189,9 @@ const ChatWindow = ({ room }) => {
                       ${isOwnMessage ? 'message-sent' : 'message-received'}
                     `}
                   >
-                    <p className="text-sm break-words">{message.content}</p>
+                    <p className="text-sm whitespace-pre-wrap break-words">
+                      {typeof message.content === 'string' ? message.content : String(message.content || '')}
+                    </p>
                     <p className={`text-xs mt-1 ${
                       isOwnMessage ? 'text-blinders-dark' : 'text-gray-400'
                     }`}>
@@ -224,7 +226,7 @@ const ChatWindow = ({ room }) => {
       </div>
 
       {/* Message Input */}
-      <div className="bg-blinders-dark border-t border-blinders-gray p-4">
+      <div className="message-input-container">
         <form onSubmit={handleSendMessage} className="flex items-center space-x-3">
           <button
             type="button"

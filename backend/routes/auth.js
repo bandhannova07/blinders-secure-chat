@@ -477,43 +477,103 @@ router.patch('/notifications/:id/read', authenticateToken, async (req, res) => {
   }
 });
 
-// Change username
-router.put('/change-username', authenticateToken, async (req, res) => {
+// Update username
+router.put('/update-username', authenticateToken, async (req, res) => {
   try {
-    const { newUsername } = req.body;
-    
-    if (!newUsername || newUsername.trim().length < 3) {
-      return res.status(400).json({ error: 'Username must be at least 3 characters long' });
+    const { username } = req.body;
+    const userId = req.user.userId;
+
+    if (!username || !username.trim()) {
+      return res.status(400).json({ error: 'Username is required' });
     }
-    
+
+    const trimmedUsername = username.trim();
+
     // Check if username is already taken
     const existingUser = await User.findOne({ 
-      username: newUsername.trim(),
-      _id: { $ne: req.user.userId }
+      username: trimmedUsername,
+      _id: { $ne: userId }
     });
-    
+
     if (existingUser) {
-      return res.status(400).json({ error: 'Username already taken' });
+      return res.status(400).json({ error: 'Username is already taken' });
     }
-    
+
+    // Get old username for message history update
+    const oldUser = await User.findById(userId).select('username');
+    const oldUsername = oldUser.username;
+
     // Update username
-    const user = await User.findById(req.user.userId);
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { username: trimmedUsername },
+      { new: true }
+    ).select('-password -originalPassword');
+
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
-    const oldUsername = user.username;
-    user.username = newUsername.trim();
-    await user.save();
-    
+
+    // Update message history to reflect username change
+    // Note: We don't update the actual messages since they are encrypted,
+    // but the sender information will be updated automatically through population
+
     res.json({ 
+      success: true, 
       message: 'Username updated successfully',
-      oldUsername,
-      newUsername: user.username
+      user: {
+        id: user._id,
+        username: user.username,
+        role: user.role,
+        status: user.status
+      }
     });
   } catch (error) {
-    console.error('Change username error:', error);
-    res.status(500).json({ error: 'Failed to change username' });
+    console.error('Update username error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Change password
+router.put('/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.userId;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current password and new password are required' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters long' });
+    }
+
+    // Get user with password
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({ error: 'Current password is incorrect' });
+    }
+
+    // Hash new password
+    const saltRounds = 12;
+    const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password
+    await User.findByIdAndUpdate(userId, { password: hashedNewPassword });
+
+    res.json({ 
+      success: true, 
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

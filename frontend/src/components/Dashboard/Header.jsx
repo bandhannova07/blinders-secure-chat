@@ -1,10 +1,11 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Menu, X, Crown, Shield, LogOut, Settings, Users } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useSocket } from '../../contexts/SocketContext';
+import { Menu, X, Crown, Shield, LogOut, Settings, Users, UserPlus } from 'lucide-react';
 
-const Header = ({ user, connected, onMenuClick, sidebarOpen }) => {
-  const { logout } = useAuth();
+const Header = ({ toggleSidebar, sidebarOpen, onShowJoinRequests, onShowSettings }) => {
+  const { logout, user } = useAuth();
+  const { connected } = useSocket();
 
   const getRoleIcon = (role) => {
     const icons = {
@@ -34,7 +35,7 @@ const Header = ({ user, connected, onMenuClick, sidebarOpen }) => {
       <div className="flex items-center space-x-4">
         {/* Menu Button */}
         <button
-          onClick={onMenuClick}
+          onClick={toggleSidebar}
           className="p-2 rounded-lg hover:bg-blinders-gray transition-colors duration-200"
         >
           {sidebarOpen ? (
@@ -64,15 +65,15 @@ const Header = ({ user, connected, onMenuClick, sidebarOpen }) => {
 
       {/* Right Side */}
       <div className="flex items-center space-x-4">
-        {/* Admin Panel Link */}
-        {['president', 'vice-president'].includes(user?.role) && (
-          <Link
-            to="/admin"
+        {/* Join Requests Button (President only) */}
+        {user?.role === 'president' && (
+          <button
+            onClick={onShowJoinRequests}
             className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-blinders-gray hover:bg-blinders-light-gray transition-colors duration-200"
           >
-            <Users className="h-4 w-4 text-blinders-gold" />
-            <span className="text-sm text-white">Admin</span>
-          </Link>
+            <UserPlus className="h-4 w-4 text-blinders-gold" />
+            <span className="text-sm text-white">Join Requests</span>
+          </button>
         )}
 
         {/* User Info */}
@@ -96,6 +97,13 @@ const Header = ({ user, connected, onMenuClick, sidebarOpen }) => {
             {/* Dropdown Menu */}
             <div className="absolute right-0 mt-2 w-48 bg-blinders-dark border border-blinders-gray rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
               <div className="py-2">
+                <button
+                  onClick={onShowSettings}
+                  className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-white hover:bg-blinders-gray transition-colors duration-200"
+                >
+                  <Settings className="h-4 w-4" />
+                  <span>Settings</span>
+                </button>
                 <button
                   onClick={logout}
                   className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-white hover:bg-blinders-gray transition-colors duration-200"

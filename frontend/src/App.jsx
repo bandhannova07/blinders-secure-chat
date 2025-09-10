@@ -6,13 +6,15 @@ import { SocketProvider } from './contexts/SocketContext';
 import Login from './components/Auth/Login';
 import Dashboard from './components/Dashboard/Dashboard';
 import AdminPanel from './components/Admin/AdminPanel';
+import LocalhostRestriction from './components/LocalhostRestriction';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="min-h-screen bg-blinders-black">
-          <Toaster 
+    <LocalhostRestriction>
+      <AuthProvider>
+        <Router>
+          <div className="min-h-screen bg-blinders-black">
+            <Toaster 
             position="top-right"
             toastOptions={{
               duration: 4000,
@@ -35,10 +37,11 @@ function App() {
               },
             }}
           />
-          <AppRoutes />
-        </div>
-      </Router>
-    </AuthProvider>
+            <AppRoutes />
+          </div>
+        </Router>
+      </AuthProvider>
+    </LocalhostRestriction>
   );
 }
 
@@ -47,7 +50,7 @@ function AppRoutes() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-blinders-black">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blinders-gold mx-auto mb-4"></div>
           <p className="text-blinders-gold">Loading Blinders Secure Chat...</p>

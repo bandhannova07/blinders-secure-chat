@@ -6,7 +6,7 @@ import CryptoJS from 'crypto-js';
 
 const SocketContext = createContext();
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
 export const useSocket = () => {
   const context = useContext(SocketContext);
@@ -85,23 +85,36 @@ export const SocketProvider = ({ children }) => {
         
         // Decrypt message if encrypted
         let decryptedContent = message.content;
-        if (message.isEncrypted) {
+        if (message.isEncrypted && message.content) {
           try {
             const bytes = CryptoJS.AES.decrypt(message.content, encryptionKey);
-            decryptedContent = bytes.toString(CryptoJS.enc.Utf8);
+            const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+            if (decrypted) {
+              decryptedContent = decrypted;
+            }
           } catch (error) {
             console.error('Failed to decrypt message:', error);
-            decryptedContent = '[Encrypted Message]';
+            // Keep original content if decryption fails
           }
         }
 
+        // Ensure content is always a string and sanitized
+        const sanitizedContent = typeof decryptedContent === 'string' 
+          ? decryptedContent.trim() 
+          : String(decryptedContent || '').trim();
+
         const processedMessage = {
           ...message,
-          content: decryptedContent,
+          content: sanitizedContent,
           timestamp: new Date(message.timestamp)
         };
 
-        setMessages(prev => [...prev, processedMessage]);
+        setMessages(prev => {
+          // Prevent duplicate messages
+          const exists = prev.find(m => m.id === message.id);
+          if (exists) return prev;
+          return [...prev, processedMessage];
+        });
       });
 
       newSocket.on('user-joined', (data) => {
@@ -149,17 +162,21 @@ export const SocketProvider = ({ children }) => {
   };
 
   const sendMessage = (content, messageType = 'text') => {
-    if (socket && connected && currentRoom) {
+    if (socket && connected && currentRoom && content?.trim()) {
+      // Sanitize content
+      const sanitizedContent = content.trim();
+      
       // Encrypt message content
-      let encryptedContent = content;
+      let encryptedContent = sanitizedContent;
       let isEncrypted = false;
 
       try {
-        encryptedContent = CryptoJS.AES.encrypt(content, encryptionKey).toString();
+        encryptedContent = CryptoJS.AES.encrypt(sanitizedContent, encryptionKey).toString();
         isEncrypted = true;
       } catch (error) {
         console.error('Failed to encrypt message:', error);
         // Send unencrypted if encryption fails
+        encryptedContent = sanitizedContent;
       }
 
       socket.emit('send-message', {
@@ -200,5 +217,3 @@ export const SocketProvider = ({ children }) => {
     </SocketContext.Provider>
   );
 };
-
-export { SocketContext };
