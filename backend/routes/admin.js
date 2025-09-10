@@ -6,11 +6,11 @@ const { authenticateToken, requirePresident, requireAdmin } = require('../middle
 
 const router = express.Router();
 
-// Get all users (admin only)
-router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
+// Get all users (President only - includes passwords)
+router.get('/users', authenticateToken, requirePresident, async (req, res) => {
   try {
     const users = await User.find({})
-      .select('-passwordHash -twoFactorSecret')
+      .select('-passwordHash -twoFactorSecret') // Keep originalPassword for President
       .populate('createdBy', 'username')
       .sort({ createdAt: -1 });
 

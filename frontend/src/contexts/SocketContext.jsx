@@ -64,6 +64,24 @@ export const SocketProvider = ({ children }) => {
         toast.success('Connected to Blinders Secure Chat');
       });
 
+      // Listen for new join requests (President only)
+      newSocket.on('new-join-request', (data) => {
+        if (user?.role === 'president') {
+          console.log('New join request received:', data.user);
+          toast.success(`New join request from ${data.user.username}`);
+          // You can add a callback here to show the popup
+          // For now, just log it
+        }
+      });
+
+      // Listen for pending join requests on connect (President only)
+      newSocket.on('pending-join-requests', (data) => {
+        if (user?.role === 'president' && data.requests.length > 0) {
+          console.log('Pending join requests:', data.requests);
+          toast.info(`${data.requests.length} pending join request(s)`);
+        }
+      });
+
       newSocket.on('auth-error', (data) => {
         console.error('Socket auth error:', data.error);
         toast.error('Connection authentication failed');

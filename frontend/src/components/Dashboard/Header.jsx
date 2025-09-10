@@ -3,7 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useSocket } from '../../contexts/SocketContext';
 import { Menu, X, Crown, Shield, LogOut, Settings, Users, UserPlus, Database } from 'lucide-react';
 
-const Header = ({ toggleSidebar, sidebarOpen, onShowJoinRequests, onShowSettings, onShowMediaManagement }) => {
+const Header = ({ toggleSidebar, sidebarOpen, onShowJoinRequests, onShowSettings, onShowMediaManagement, onShowUserControl }) => {
   const { logout, user } = useAuth();
   const { connected } = useSocket();
 
@@ -65,15 +65,25 @@ const Header = ({ toggleSidebar, sidebarOpen, onShowJoinRequests, onShowSettings
 
       {/* Right Side */}
       <div className="flex items-center space-x-4">
-        {/* Join Requests Button (President only) */}
+        {/* President Controls */}
         {user?.role === 'president' && (
-          <button
-            onClick={onShowJoinRequests}
-            className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-blinders-gray hover:bg-blinders-light-gray transition-colors duration-200"
-          >
-            <UserPlus className="h-4 w-4 text-blinders-gold" />
-            <span className="text-sm text-white">Join Requests</span>
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={onShowJoinRequests}
+              className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-blinders-gray hover:bg-blinders-light-gray transition-colors duration-200"
+            >
+              <UserPlus className="h-4 w-4 text-blinders-gold" />
+              <span className="text-sm text-white">Join Requests</span>
+            </button>
+            
+            <button
+              onClick={onShowUserControl}
+              className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-blinders-gray hover:bg-blinders-light-gray transition-colors duration-200"
+            >
+              <Users className="h-4 w-4 text-blinders-gold" />
+              <span className="text-sm text-white">User Control</span>
+            </button>
+          </div>
         )}
 
         {/* User Info */}

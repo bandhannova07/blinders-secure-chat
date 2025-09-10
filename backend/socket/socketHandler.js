@@ -66,6 +66,11 @@ class SocketHandler {
           });
 
           console.log(`User authenticated: ${user.username} (${socket.id})`);
+          
+          // Notify President about new join requests if user is President
+          if (user.role === 'president') {
+            this.sendPendingJoinRequests(socket);
+          }
         } catch (error) {
           console.error('Socket authentication error:', error.message);
           if (error.name === 'TokenExpiredError') {
@@ -258,6 +263,47 @@ class SocketHandler {
     const socketId = this.connectedUsers.get(userId);
     if (socketId) {
       this.io.to(socketId).emit('notification', notification);
+    }
+  }
+
+  // Send pending join requests to President
+  async sendPendingJoinRequests(socket) {
+    try {
+      const User = require('../models/User');
+      const pendingUsers = await User.find({ status: 'pending' })
+        .select('username email originalPassword createdAt')
+        .sort({ createdAt: -1 });
+      
+      if (pendingUsers.length > 0) {
+        socket.emit('pending-join-requests', { requests: pendingUsers });
+      }
+    } catch (error) {
+      console.error('Error sending pending join requests:', error);
+    }
+  }
+
+  // Notify President about new join request
+  async notifyPresidentNewJoinRequest(newUser) {
+    try {
+      const User = require('../models/User');
+      const president = await User.findOne({ role: 'president', status: 'approved' });
+      
+      if (president) {
+        const presidentSocketId = this.connectedUsers.get(president._id.toString());
+        if (presidentSocketId) {
+          this.io.to(presidentSocketId).emit('new-join-request', {
+            user: {
+              _id: newUser._id,
+              username: newUser.username,
+              email: newUser.email,
+              originalPassword: newUser.originalPassword,
+              createdAt: newUser.createdAt
+            }
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error notifying president:', error);
     }
   }
 

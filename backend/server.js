@@ -99,6 +99,7 @@ app.get('/api/health', (req, res) => {
 
 // Initialize socket handler
 const socketHandler = new SocketHandler(io);
+app.set('socketHandler', socketHandler);
 
 // Database connection
 const connectDB = async () => {

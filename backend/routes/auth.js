@@ -41,6 +41,13 @@ router.post('/signup', async (req, res) => {
     if (!isFirstUser) {
       const president = await User.findOne({ role: 'president', status: 'approved' });
       if (president) {
+        // Send WebSocket notification to President if online
+        const SocketHandler = require('../socket/socketHandler');
+        const socketHandler = req.app.get('socketHandler');
+        if (socketHandler) {
+          await socketHandler.notifyPresidentNewJoinRequest(user);
+        }
+        
         const notification = new Notification({
           recipient: president._id,
           sender: user._id,
