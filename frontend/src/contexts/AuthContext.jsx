@@ -72,30 +72,39 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, [token]);
 
-  const login = async (username, password, twoFactorToken = null) => {
+  const login = async (username, password, secretCode = null) => {
     try {
       const response = await axios.post('/auth/login', {
         username,
         password,
-        twoFactorToken
+        secretCode
       });
 
-      if (response.data.requiresTwoFactor) {
-        return { requiresTwoFactor: true };
+      if (response.data.requiresSecretCode) {
+        return { requiresSecretCode: true };
       }
 
-      const { token: newToken, user: userData } = response.data;
+      const { token, user } = response.data;
+      localStorage.setItem('authToken', token);
+      setUser(user);
+      setIsAuthenticated(true);
       
-      localStorage.setItem('authToken', newToken);
-      setToken(newToken);
-      setUser(userData);
+      // Check if President needs to setup secret code
+      if (user.role === 'president' && !user.hasSecretCode) {
+        return { user, needsSecretCodeSetup: true };
+      }
       
-      toast.success(`Welcome back, ${userData.username}!`);
-      return { success: true, user: userData };
+      toast.success(`Welcome back, ${user.username}!`);
+      return { user };
     } catch (error) {
-      const message = error.response?.data?.error || 'Login failed';
-      toast.error(message);
-      throw new Error(message);
+      const errorMessage = error.response?.data?.error || 'Login failed';
+      
+      if (error.response?.data?.requiresSecretCode) {
+        return { requiresSecretCode: true };
+      }
+      
+      toast.error(errorMessage);
+      throw new Error(errorMessage);
     }
   };
 

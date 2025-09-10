@@ -83,7 +83,7 @@ router.post('/signup', async (req, res) => {
 // Login route
 router.post('/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, secretCode } = req.body;
 
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password are required' });
@@ -95,40 +95,47 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    // Check if user is approved
+    if (user.status !== 'approved') {
+      return res.status(403).json({ error: 'Account pending approval' });
+    }
+
+    // Check if user is active
+    if (!user.isActive) {
+      return res.status(403).json({ error: 'Account is inactive' });
+    }
+
     // Check if user is banned
     if (user.isBanned) {
       return res.status(403).json({ error: 'Account is banned' });
     }
 
-    // Check password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
+    // Compare password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Update last login for permanent President
-    if (isPermanentPresident(user)) {
-      user.lastLogin = new Date();
-      await user.save();
-      console.log(' Permanent President logged in');
+    // For President, check secret code if it's set up
+    if (user.role === 'president' && user.secretCode) {
+      if (!secretCode) {
+        return res.status(400).json({ 
+          error: 'Secret code required for President account',
+          requiresSecretCode: true 
+        });
+      }
+
+      const isSecretCodeValid = await bcrypt.compare(secretCode, user.secretCode);
+      if (!isSecretCodeValid) {
+        return res.status(401).json({ error: 'Invalid secret code' });
+      }
     }
 
-    // Check if user is approved (except for president)
-    if (user.role !== 'president' && user.status !== 'approved') {
-      return res.status(403).json({ 
-        error: 'Account pending approval',
-        message: 'Your account is waiting for approval from the President'
-      });
-    }
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save();
 
-    if (user.status === 'rejected') {
-      return res.status(403).json({ 
-        error: 'Account rejected',
-        message: 'Your account has been rejected by the President'
-      });
-    }
-
-    // Generate JWT token with 1 hour expiry for President, default for others
+    // Generate JWT token with different expiry for President
     const expiresIn = user.role === 'president' ? '1h' : (process.env.JWT_EXPIRES_IN || '24h');
     const token = jwt.sign(
       { userId: user._id, username: user.username, role: user.role },
@@ -136,14 +143,22 @@ router.post('/login', async (req, res) => {
       { expiresIn }
     );
 
+    // Notify President of pending join requests via WebSocket
+    if (req.app.socketHandler) {
+      req.app.socketHandler.sendPendingJoinRequests(user._id.toString());
+    }
+
     res.json({
+      message: 'Login successful',
       token,
       user: {
         id: user._id,
         username: user.username,
-        email: user.email,
         role: user.role,
-        lastSeen: user.lastSeen
+        status: user.status,
+        lastLogin: user.lastLogin,
+        createdAt: user.createdAt,
+        hasSecretCode: user.role === 'president' && !!user.secretCode
       }
     });
   } catch (error) {
@@ -208,9 +223,53 @@ router.post('/register', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
+// Setup secret code for President (2FA)
+router.post('/setup-secret-code', authenticateToken, async (req, res) => {
+  try {
+    const { secretCode } = req.body;
+    
+    if (!secretCode || secretCode.length < 6) {
+      return res.status(400).json({ error: 'Secret code must be at least 6 characters long' });
+    }
+
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.role !== 'president') {
+      return res.status(403).json({ error: 'Only President can setup secret code' });
+    }
+
+    // Hash the secret code
+    const salt = await bcrypt.genSalt(12);
+    const hashedSecretCode = await bcrypt.hash(secretCode, salt);
+
+    user.secretCode = hashedSecretCode;
+    await user.save();
+
+    res.json({ message: 'Secret code setup successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Logout route
 router.post('/logout', authenticateToken, (req, res) => {
   res.json({ message: 'Logged out successfully' });
+});
+
+// Get users directory (visible to all authenticated users)
+router.get('/users-directory', authenticateToken, async (req, res) => {
+  try {
+    const users = await User.find({ status: 'approved' })
+      .select('username role lastSeen isOnline createdAt')
+      .sort({ role: -1, lastSeen: -1 });
+
+    res.json({ users });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Get current user profile

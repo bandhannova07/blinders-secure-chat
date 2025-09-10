@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSocket } from '../../contexts/SocketContext';
+import UserDirectory from './UserDirectory';
 import axios from 'axios';
 import { Crown, Sword, Key, BookOpen, Shield, X } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -170,6 +171,9 @@ const Sidebar = ({ onRoomSelect, selectedRoom, onClose }) => {
           })
         )}
       </div>
+
+      {/* User Directory */}
+      <UserDirectory />
 
       {/* Footer */}
       <div className="mt-4 pt-4 border-t border-blinders-gray flex-shrink-0">

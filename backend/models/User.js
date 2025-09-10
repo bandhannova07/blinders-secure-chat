@@ -54,6 +54,14 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
+  isOnline: {
+    type: Boolean,
+    default: false
+  },
+  secretCode: {
+    type: String,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now

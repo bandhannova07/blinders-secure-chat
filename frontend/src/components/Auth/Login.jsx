@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Eye, EyeOff, Shield, Crown } from 'lucide-react';
+import { Eye, EyeOff, Shield, Lock, Key } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const Login = () => {
+const Login = ({ onLoginSuccess }) => {
   const { login, signup } = useAuth();
   const [isSignup, setIsSignup] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     password: '',
-    twoFactorToken: ''
+    secretCode: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [requiresTwoFactor, setRequiresTwoFactor] = useState(false);
+  const [requiresSecretCode, setRequiresSecretCode] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
 
   const handleChange = (e) => {
@@ -41,12 +41,14 @@ const Login = () => {
         const result = await login(
           formData.username, 
           formData.password, 
-          requiresTwoFactor ? formData.twoFactorToken : null
+          requiresSecretCode ? formData.secretCode : null
         );
 
-        if (result.requiresTwoFactor) {
-          setRequiresTwoFactor(true);
-          toast.success('Enter your 2FA code to continue');
+        if (result.requiresSecretCode) {
+          setRequiresSecretCode(true);
+          toast.success('Enter your secret code to continue');
+        } else if (result.needsSecretCodeSetup) {
+          onLoginSuccess && onLoginSuccess(result);
         }
       }
     } catch (error) {
@@ -61,8 +63,8 @@ const Login = () => {
 
   const toggleMode = () => {
     setIsSignup(!isSignup);
-    setFormData({ username: '', email: '', password: '', twoFactorToken: '' });
-    setRequiresTwoFactor(false);
+    setFormData({ username: '', email: '', password: '', secretCode: '' });
+    setRequiresSecretCode(false);
     setPendingApproval(false);
   };
 
@@ -171,25 +173,27 @@ const Login = () => {
               </div>
             </div>
 
-            {requiresTwoFactor && (
+            {requiresSecretCode && (
               <div className="animate-fade-in">
-                <label htmlFor="twoFactorToken" className="block text-sm font-medium text-gray-300 mb-2">
-                  Two-Factor Authentication Code
+                <label htmlFor="secretCode" className="block text-sm font-medium text-gray-300 mb-2">
+                  <div className="flex items-center space-x-2">
+                    <Key className="h-4 w-4 text-blinders-gold" />
+                    <span>President Secret Code</span>
+                  </div>
                 </label>
                 <input
-                  type="text"
-                  id="twoFactorToken"
-                  name="twoFactorToken"
-                  value={formData.twoFactorToken}
+                  type="password"
+                  id="secretCode"
+                  name="secretCode"
+                  value={formData.secretCode}
                   onChange={handleChange}
                   className="input-field w-full"
-                  placeholder="Enter 6-digit code"
-                  maxLength="6"
+                  placeholder="Enter your secret code"
                   required
                   disabled={loading}
                 />
                 <p className="text-xs text-gray-400 mt-1">
-                  Enter the code from your authenticator app
+                  Enter your President secret code for enhanced security
                 </p>
               </div>
             )}
