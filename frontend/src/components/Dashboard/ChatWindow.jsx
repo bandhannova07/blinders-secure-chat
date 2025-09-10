@@ -167,12 +167,12 @@ const ChatWindow = ({ room }) => {
           </div>
         ) : (
           messages.map((message) => {
-            const isOwnMessage = message.sender.id === user?.id;
+            const isOwnMessage = message.sender._id === user?.id || message.sender.id === user?.id;
             
             return (
               <div
-                key={message.id}
-                className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+                key={message._id || message.id}
+                className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} mb-4`}
               >
                 <div className={`max-w-xs lg:max-w-md ${isOwnMessage ? 'order-2' : 'order-1'}`}>
                   {!isOwnMessage && (
@@ -189,7 +189,7 @@ const ChatWindow = ({ room }) => {
                       ${isOwnMessage ? 'message-sent' : 'message-received'}
                     `}
                   >
-                    <p className="text-sm">{message.content}</p>
+                    <p className="text-sm break-words">{message.content}</p>
                     <p className={`text-xs mt-1 ${
                       isOwnMessage ? 'text-blinders-dark' : 'text-gray-400'
                     }`}>

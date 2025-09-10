@@ -100,10 +100,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('blinders_token');
-    setToken(null);
+    localStorage.removeItem('token');
     setUser(null);
+    setIsAuthenticated(false);
     toast.success('Logged out successfully');
+  };
+
+  const updateUser = (updatedUser) => {
+    setUser(updatedUser);
   };
 
   const signup = async (username, email, password) => {
@@ -177,15 +181,15 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
-    loading,
-    token,
+    isAuthenticated,
+    isLoading: loading,
     login,
     logout,
-    signup,
     register,
     setup2FA,
     verify2FA,
-    disable2FA
+    signup,
+    updateUser
   };
 
   return (
@@ -194,3 +198,5 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+
+export { AuthContext };

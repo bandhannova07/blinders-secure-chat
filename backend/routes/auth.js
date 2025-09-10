@@ -477,4 +477,44 @@ router.patch('/notifications/:id/read', authenticateToken, async (req, res) => {
   }
 });
 
+// Change username
+router.put('/change-username', authenticateToken, async (req, res) => {
+  try {
+    const { newUsername } = req.body;
+    
+    if (!newUsername || newUsername.trim().length < 3) {
+      return res.status(400).json({ error: 'Username must be at least 3 characters long' });
+    }
+    
+    // Check if username is already taken
+    const existingUser = await User.findOne({ 
+      username: newUsername.trim(),
+      _id: { $ne: req.user.userId }
+    });
+    
+    if (existingUser) {
+      return res.status(400).json({ error: 'Username already taken' });
+    }
+    
+    // Update username
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const oldUsername = user.username;
+    user.username = newUsername.trim();
+    await user.save();
+    
+    res.json({ 
+      message: 'Username updated successfully',
+      oldUsername,
+      newUsername: user.username
+    });
+  } catch (error) {
+    console.error('Change username error:', error);
+    res.status(500).json({ error: 'Failed to change username' });
+  }
+});
+
 module.exports = router;

@@ -165,9 +165,11 @@ class SocketHandler {
 
           // Broadcast message to all users in the room
           this.io.to(roomId).emit('new-message', {
+            _id: message._id,
             id: message._id,
             content: message.content,
             sender: {
+              _id: message.sender._id,
               id: message.sender._id,
               username: message.sender.username,
               role: message.sender.role

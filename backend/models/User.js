@@ -108,6 +108,17 @@ userSchema.methods.canAccessRoom = function(roomRole) {
     'shield-circle': 1
   }[roomRole] || 0;
   
+  // President can access all rooms
+  if (this.role === 'president') {
+    return true;
+  }
+  
+  // Vice-president can access all except president-only rooms
+  if (this.role === 'vice-president' && roomRole !== 'president') {
+    return true;
+  }
+  
+  // For other roles, they can access their own level and below
   return userLevel >= roomLevel;
 };
 
