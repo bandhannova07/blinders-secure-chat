@@ -27,33 +27,35 @@ const { ensurePresidentAccount } = require('./utils/presidentAccount');
 const app = express();
 const server = http.createServer(app);
 
-// Enhanced localhost restriction middleware
-app.use((req, res, next) => {
-  const host = req.get('host');
-  const origin = req.get('origin');
-  const forwarded = req.get('x-forwarded-for');
-  const realIp = req.get('x-real-ip');
-  
-  // Check for localhost in various headers
-  const isLocalhost = (
-    (host && (host.includes('localhost') || host.includes('127.0.0.1') || host.includes('192.168.'))) ||
-    (origin && (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('192.168.'))) ||
-    (forwarded && (forwarded.includes('127.0.0.1') || forwarded.includes('192.168.'))) ||
-    (realIp && (realIp.includes('127.0.0.1') || realIp.includes('192.168.')))
-  );
-  
-  // Block localhost access completely in production
-  if (isLocalhost) {
-    console.log(`🚫 Blocked localhost access attempt from: ${host || origin || forwarded || realIp}`);
-    return res.status(403).json({
-      error: 'Access Denied',
-      message: 'Localhost access is not permitted. Please use the official deployed URL.',
-      code: 'LOCALHOST_BLOCKED'
-    });
-  }
-  
-  next();
-});
+// Enhanced localhost restriction middleware (only for production)
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    const host = req.get('host');
+    const origin = req.get('origin');
+    const forwarded = req.get('x-forwarded-for');
+    const realIp = req.get('x-real-ip');
+    
+    // Check for localhost in various headers
+    const isLocalhost = (
+      (host && (host.includes('localhost') || host.includes('127.0.0.1') || host.includes('192.168.'))) ||
+      (origin && (origin.includes('localhost') || origin.includes('127.0.0.1') || origin.includes('192.168.'))) ||
+      (forwarded && (forwarded.includes('127.0.0.1') || forwarded.includes('192.168.'))) ||
+      (realIp && (realIp.includes('127.0.0.1') || realIp.includes('192.168.')))
+    );
+    
+    // Block localhost access completely in production
+    if (isLocalhost) {
+      console.log(`🚫 Blocked localhost access attempt from: ${host || origin || forwarded || realIp}`);
+      return res.status(403).json({
+        error: 'Access Denied',
+        message: 'Localhost access is not permitted. Please use the official deployed URL.',
+        code: 'LOCALHOST_BLOCKED'
+      });
+    }
+    
+    next();
+  });
+}
 const io = socketIo(server, {
   cors: {
     origin: process.env.FRONTEND_URL || "http://localhost:3000",

@@ -19,11 +19,33 @@ class SocketHandler {
       // Authenticate socket connection
       socket.on('authenticate', async (token) => {
         try {
+          console.log('Socket authentication attempt with token:', token ? 'Token received' : 'No token');
+          
+          if (!token) {
+            socket.emit('auth-error', { error: 'No token provided' });
+            return;
+          }
+          
           const decoded = jwt.verify(token, process.env.JWT_SECRET);
+          console.log('Token decoded successfully for user:', decoded.username);
+          
           const user = await User.findById(decoded.userId).select('-passwordHash');
           
-          if (!user || user.isBanned || !user.isActive) {
-            socket.emit('auth-error', { error: 'Authentication failed' });
+          if (!user) {
+            console.log('User not found for ID:', decoded.userId);
+            socket.emit('auth-error', { error: 'User not found' });
+            return;
+          }
+          
+          if (user.isBanned) {
+            console.log('User is banned:', user.username);
+            socket.emit('auth-error', { error: 'User is banned' });
+            return;
+          }
+          
+          if (!user.isActive) {
+            console.log('User is inactive:', user.username);
+            socket.emit('auth-error', { error: 'User account is inactive' });
             return;
           }
 
@@ -45,7 +67,12 @@ class SocketHandler {
 
           console.log(`User authenticated: ${user.username} (${socket.id})`);
         } catch (error) {
-          socket.emit('auth-error', { error: 'Invalid token' });
+          console.error('Socket authentication error:', error.message);
+          if (error.name === 'TokenExpiredError') {
+            socket.emit('auth-error', { error: 'Token expired' });
+          } else {
+            socket.emit('auth-error', { error: 'Invalid token' });
+          }
         }
       });
 

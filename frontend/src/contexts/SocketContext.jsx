@@ -32,9 +32,16 @@ export const SocketProvider = ({ children }) => {
   // Initialize socket connection
   useEffect(() => {
     if (user && token) {
+      console.log('Initializing socket connection for user:', user.username);
+      console.log('Using token:', token ? 'Token present' : 'No token');
+      console.log('Socket URL:', SOCKET_URL);
+      
       const newSocket = io(SOCKET_URL, {
         autoConnect: false,
-        transports: ['websocket', 'polling']
+        transports: ['websocket', 'polling'],
+        auth: {
+          token: token
+        }
       });
 
       newSocket.connect();
@@ -60,6 +67,7 @@ export const SocketProvider = ({ children }) => {
       newSocket.on('auth-error', (data) => {
         console.error('Socket auth error:', data.error);
         toast.error('Connection authentication failed');
+        setConnected(false);
       });
 
       newSocket.on('error', (data) => {
