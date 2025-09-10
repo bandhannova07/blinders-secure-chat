@@ -20,7 +20,7 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState(localStorage.getItem('blinders_token'));
+  const [token, setToken] = useState(localStorage.getItem('authToken'));
 
   // Set up axios interceptor for auth token
   useEffect(() => {
@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }) => {
     const interceptor = axios.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 401) {
+        if (error.response?.status === 401 && error.response?.data?.error?.includes('expired')) {
           logout();
           toast.error('Session expired. Please login again.');
         }
@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }) => {
           setUser(response.data.user);
         } catch (error) {
           console.error('Auth check failed:', error);
-          localStorage.removeItem('blinders_token');
+          localStorage.removeItem('authToken');
           setToken(null);
         }
       }
@@ -86,7 +86,7 @@ export const AuthProvider = ({ children }) => {
 
       const { token: newToken, user: userData } = response.data;
       
-      localStorage.setItem('blinders_token', newToken);
+      localStorage.setItem('authToken', newToken);
       setToken(newToken);
       setUser(userData);
       
@@ -100,7 +100,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('blinders_token');
+    localStorage.removeItem('authToken');
     setToken(null);
     setUser(null);
     toast.success('Logged out successfully');

@@ -17,7 +17,8 @@ export const useSocket = () => {
 };
 
 export const SocketProvider = ({ children }) => {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
+  const token = localStorage.getItem('authToken');
   const [socket, setSocket] = useState(null);
   const [connected, setConnected] = useState(false);
   const [currentRoom, setCurrentRoom] = useState(null);

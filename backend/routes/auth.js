@@ -121,11 +121,12 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Generate JWT token
+    // Generate JWT token with 1 hour expiry for President, default for others
+    const expiresIn = user.role === 'president' ? '1h' : (process.env.JWT_EXPIRES_IN || '24h');
     const token = jwt.sign(
       { userId: user._id, username: user.username, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
+      { expiresIn }
     );
 
     res.json({
