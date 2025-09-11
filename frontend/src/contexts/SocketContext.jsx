@@ -6,7 +6,7 @@ import CryptoJS from 'crypto-js';
 
 const SocketContext = createContext();
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:10000';
 
 export const useSocket = () => {
   const context = useContext(SocketContext);
@@ -148,6 +148,17 @@ export const SocketProvider = ({ children }) => {
         setOnlineUsers(prev => prev.filter(u => u.userId !== data.userId));
         setTypingUsers(prev => prev.filter(u => u.userId !== data.userId));
       });
+
+      // Listen for new join requests (President only)
+      if (user?.role === 'president') {
+        newSocket.on('new-join-request', (data) => {
+          console.log('New join request received:', data);
+          toast.success(`New join request from ${data.username}`, {
+            duration: 6000,
+            icon: '👤'
+          });
+        });
+      }
 
       setSocket(newSocket);
 

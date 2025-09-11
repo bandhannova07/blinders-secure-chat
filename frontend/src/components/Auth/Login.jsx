@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Eye, EyeOff, Shield, Crown } from 'lucide-react';
+import { Eye, EyeOff, Shield, Crown, Lock, User, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 import SecretCodeLogin from './SecretCodeLogin';
+import BlindersLogo from '../UI/BlindersLogo';
 
 const Login = () => {
   const { login, signup } = useAuth();
@@ -112,14 +113,10 @@ const Login = () => {
       <div className="max-w-md w-full mx-4">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <Crown className="h-12 w-12 text-blinders-gold mr-2" />
-            <Shield className="h-12 w-12 text-blinders-gold" />
+          <div className="flex justify-center mb-4">
+            <BlindersLogo size="xl" showText={true} />
           </div>
-          <h1 className="text-4xl font-bold text-blinders-gold mb-2 text-shadow">
-            Blinders Secure Chat
-          </h1>
-          <p className="text-gray-400">
+          <p className="text-gray-400 text-lg">
             {isSignup ? 'Join the Blinders' : 'By order of the BLINDERS'}
           </p>
         </div>

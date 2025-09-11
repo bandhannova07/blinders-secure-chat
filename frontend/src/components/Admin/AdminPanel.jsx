@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Users, Shield, Crown, Plus, Settings, BarChart3, Trash2, Ban, UserCheck } from 'lucide-react';
+import { Crown, Users, Database, Settings, BarChart3, Shield, LogOut } from 'lucide-react';
+import UserManagement from './UserManagement';
+import SystemStats from './SystemStats';
+import BlindersLogo from '../UI/BlindersLogo';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import UserManagement from './UserManagement';
 import RoomManagement from './RoomManagement';
-import SystemStats from './SystemStats';
 
 const AdminPanel = () => {
   const { user } = useAuth();
@@ -55,7 +56,7 @@ const AdminPanel = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
-              <Crown className="h-8 w-8 text-blinders-gold" />
+              <BlindersLogo size="medium" showText={false} />
               <div>
                 <h1 className="text-xl font-bold text-blinders-gold">Admin Panel</h1>
                 <p className="text-sm text-gray-400">Blinders Secure Chat Management</p>

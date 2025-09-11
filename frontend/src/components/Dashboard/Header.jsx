@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSocket } from '../../contexts/SocketContext';
 import { Menu, X, Crown, Shield, LogOut, Settings, Users, UserPlus, Database, UserCog } from 'lucide-react';
+import BlindersLogo from '../UI/BlindersLogo';
 
 const Header = ({ toggleSidebar, sidebarOpen, onShowJoinRequests, onShowSettings, onShowMediaManagement, onShowUserControl }) => {
   const { logout, user } = useAuth();
@@ -46,13 +47,7 @@ const Header = ({ toggleSidebar, sidebarOpen, onShowJoinRequests, onShowSettings
         </button>
 
         {/* Logo */}
-        <div className="flex items-center space-x-2">
-          <Crown className="h-8 w-8 text-blinders-gold" />
-          <div>
-            <h1 className="text-xl font-bold text-blinders-gold">Blinders</h1>
-            <p className="text-xs text-gray-400 -mt-1">Secure Chat</p>
-          </div>
-        </div>
+        <BlindersLogo size="medium" showText={true} />
 
         {/* Connection Status */}
         <div className="flex items-center space-x-2">
