@@ -81,29 +81,25 @@ export const AuthProvider = ({ children }) => {
         secretCode
       });
 
-      if (response.data.success) {
-        const { token, user } = response.data;
-        
-        // Store token in localStorage
-        localStorage.setItem('authToken', token);
-        
-        // Set user state
-        setUser(user);
-        setIsAuthenticated(true);
-        
-        return { success: true, user };
-      } else if (response.data.requiresTwoFactor) {
+      const { token: newToken, user: userData, requiresTwoFactor, requiresSecretCode } = response.data;
+
+      if (requiresTwoFactor) {
         return { requiresTwoFactor: true };
-      } else if (response.data.requiresSecretCode) {
-        return { requiresSecretCode: true };
-      } else if (response.data.requiresSecretCodeSetup) {
-        return { requiresSecretCodeSetup: true };
-      } else {
-        throw new Error(response.data.error || 'Login failed');
       }
+
+      if (requiresSecretCode) {
+        return { requiresSecretCode: true };
+      }
+
+      setToken(newToken);
+      setUser(userData);
+      localStorage.setItem('authToken', newToken);
+      
+      toast.success(`Welcome back, ${userData.username}!`);
+      return { user: userData };
     } catch (error) {
-      console.error('Login error:', error);
-      const errorMessage = error.response?.data?.error || error.message || 'Login failed';
+      const errorMessage = error.response?.data?.error || 'Login failed';
+      toast.error(errorMessage);
       throw new Error(errorMessage);
     }
   };

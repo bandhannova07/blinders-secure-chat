@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Eye, EyeOff, Shield, Crown } from 'lucide-react';
 import toast from 'react-hot-toast';
-import SecretCodeSetup from './SecretCodeSetup';
-import SecretCodeInput from './SecretCodeInput';
+import SecretCodeLogin from './SecretCodeLogin';
 
 const Login = () => {
   const { login, signup } = useAuth();
@@ -19,8 +18,7 @@ const Login = () => {
   const [requiresTwoFactor, setRequiresTwoFactor] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
   const [requiresSecretCode, setRequiresSecretCode] = useState(false);
-  const [requiresSecretCodeSetup, setRequiresSecretCodeSetup] = useState(false);
-  const [loginCredentials, setLoginCredentials] = useState({ username: '', password: '' });
+  const [secretCodeError, setSecretCodeError] = useState('');
 
   const handleChange = (e) => {
     setFormData({
@@ -46,21 +44,15 @@ const Login = () => {
         const result = await login(
           formData.username, 
           formData.password, 
-          requiresTwoFactor ? formData.twoFactorToken : null,
-          null
+          requiresTwoFactor ? formData.twoFactorToken : null
         );
 
         if (result.requiresTwoFactor) {
           setRequiresTwoFactor(true);
           toast.success('Enter your 2FA code to continue');
         } else if (result.requiresSecretCode) {
-          setLoginCredentials({ username: formData.username, password: formData.password });
           setRequiresSecretCode(true);
-          toast.success('Enter your secret code to continue');
-        } else if (result.requiresSecretCodeSetup) {
-          setLoginCredentials({ username: formData.username, password: formData.password });
-          setRequiresSecretCodeSetup(true);
-          toast.success('Please set up your secret code');
+          setSecretCodeError('');
         }
       }
     } catch (error) {
@@ -75,30 +67,24 @@ const Login = () => {
 
   const handleSecretCodeSubmit = async (secretCode) => {
     setLoading(true);
+    setSecretCodeError('');
+    
     try {
-      await login(loginCredentials.username, loginCredentials.password, null, secretCode);
+      const result = await login(
+        formData.username, 
+        formData.password, 
+        requiresTwoFactor ? formData.twoFactorToken : null,
+        secretCode
+      );
+      
+      // If we get here, login was successful
       toast.success('Welcome, President!');
     } catch (error) {
       console.error('Secret code login error:', error);
-      toast.error(error.message || 'Invalid secret code');
+      setSecretCodeError(error.message || 'Invalid secret code');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSecretCodeSetupComplete = () => {
-    setRequiresSecretCodeSetup(false);
-    setRequiresSecretCode(false);
-    setFormData({ username: '', email: '', password: '', twoFactorToken: '' });
-    setLoginCredentials({ username: '', password: '' });
-    toast.success('Secret code setup completed! Please login again.');
-  };
-
-  const handleBackToLogin = () => {
-    setRequiresSecretCode(false);
-    setRequiresSecretCodeSetup(false);
-    setRequiresTwoFactor(false);
-    setLoginCredentials({ username: '', password: '' });
   };
 
   const toggleMode = () => {
@@ -106,27 +92,17 @@ const Login = () => {
     setFormData({ username: '', email: '', password: '', twoFactorToken: '' });
     setRequiresTwoFactor(false);
     setPendingApproval(false);
+    setRequiresSecretCode(false);
+    setSecretCodeError('');
   };
 
-  // Show secret code setup screen
-  if (requiresSecretCodeSetup) {
-    return (
-      <SecretCodeSetup
-        username={loginCredentials.username}
-        password={loginCredentials.password}
-        onSetupComplete={handleSecretCodeSetupComplete}
-        onBack={handleBackToLogin}
-      />
-    );
-  }
-
-  // Show secret code input screen
+  // Show secret code login screen if required
   if (requiresSecretCode) {
     return (
-      <SecretCodeInput
+      <SecretCodeLogin
         onSubmit={handleSecretCodeSubmit}
-        onBack={handleBackToLogin}
         loading={loading}
+        error={secretCodeError}
       />
     );
   }

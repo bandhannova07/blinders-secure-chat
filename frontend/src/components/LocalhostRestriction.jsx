@@ -40,7 +40,7 @@ const LocalhostRestriction = ({ children }) => {
               Please access the application through:
             </p>
             <a
-              href="https://your-deployed-url.com"
+              href="https://blinders-secure-chat.netlify.app"
               className="inline-flex items-center space-x-2 bg-blinders-gold text-blinders-black px-4 py-2 rounded-lg font-semibold hover:bg-blinders-light-gold transition-colors duration-200"
             >
               <ExternalLink className="h-4 w-4" />

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSocket } from '../../contexts/SocketContext';
-import { Menu, X, Crown, Shield, LogOut, Settings, Users, UserPlus, Database } from 'lucide-react';
+import { Menu, X, Crown, Shield, LogOut, Settings, Users, UserPlus, Database, UserCog } from 'lucide-react';
 
 const Header = ({ toggleSidebar, sidebarOpen, onShowJoinRequests, onShowSettings, onShowMediaManagement, onShowUserControl }) => {
   const { logout, user } = useAuth();
@@ -75,12 +75,11 @@ const Header = ({ toggleSidebar, sidebarOpen, onShowJoinRequests, onShowSettings
               <UserPlus className="h-4 w-4 text-blinders-gold" />
               <span className="text-sm text-white">Join Requests</span>
             </button>
-            
             <button
               onClick={onShowUserControl}
               className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-blinders-gray hover:bg-blinders-light-gray transition-colors duration-200"
             >
-              <Users className="h-4 w-4 text-blinders-gold" />
+              <UserCog className="h-4 w-4 text-blinders-gold" />
               <span className="text-sm text-white">User Control</span>
             </button>
           </div>

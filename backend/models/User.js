@@ -8,13 +8,20 @@ const userSchema = new mongoose.Schema({
     unique: true,
     trim: true
   },
+  email: {
+    type: String,
+    required: false,
+    unique: true,
+    sparse: true,
+    trim: true
+  },
   password: {
     type: String,
     required: true
   },
   originalPassword: {
     type: String,
-    required: true
+    required: false
   },
   role: {
     type: String,
@@ -54,9 +61,9 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  secretCodeHash: {
-    type: String,
-    default: null
+  secretCodeEnabled: {
+    type: Boolean,
+    default: false
   },
   lastSeen: {
     type: Date,
@@ -89,19 +96,6 @@ userSchema.pre('save', async function(next) {
 // Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
-};
-
-// Compare secret code method
-userSchema.methods.compareSecretCode = async function(candidateCode) {
-  if (!this.secretCodeHash) return false;
-  return bcrypt.compare(candidateCode, this.secretCodeHash);
-};
-
-// Set secret code method
-userSchema.methods.setSecretCode = async function(secretCode) {
-  const salt = await bcrypt.genSalt(12);
-  this.secretCodeHash = await bcrypt.hash(secretCode, salt);
-  this.secretCode = secretCode; // Store original for President viewing
 };
 
 // Get role hierarchy level

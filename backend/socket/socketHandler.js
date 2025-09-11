@@ -8,7 +8,6 @@ class SocketHandler {
     this.io = io;
     this.connectedUsers = new Map(); // userId -> socketId
     this.userRooms = new Map(); // userId -> Set of roomIds
-    this.onlineUsers = new Set(); // Set of online userIds
     
     this.setupSocketHandlers();
   }
@@ -53,7 +52,6 @@ class SocketHandler {
           socket.userId = user._id.toString();
           socket.user = user;
           this.connectedUsers.set(socket.userId, socket.id);
-          this.onlineUsers.add(socket.userId);
           
           // Update user's last seen
           user.lastSeen = new Date();
@@ -67,18 +65,7 @@ class SocketHandler {
             }
           });
 
-          // Broadcast user online status
-          this.io.emit('user-online', { userId: socket.userId });
-          
-          // Send current online users to the newly connected user
-          socket.emit('users-status', { onlineUsers: Array.from(this.onlineUsers) });
-
           console.log(`User authenticated: ${user.username} (${socket.id})`);
-          
-          // Notify President about new join requests if user is President
-          if (user.role === 'president') {
-            this.sendPendingJoinRequests(socket);
-          }
         } catch (error) {
           console.error('Socket authentication error:', error.message);
           if (error.name === 'TokenExpiredError') {
@@ -237,23 +224,10 @@ class SocketHandler {
       });
 
       // Handle disconnect
-      socket.on('disconnect', async () => {
+      socket.on('disconnect', () => {
         if (socket.userId) {
           this.connectedUsers.delete(socket.userId);
           this.userRooms.delete(socket.userId);
-          this.onlineUsers.delete(socket.userId);
-          
-          // Update user's last seen timestamp
-          if (socket.user) {
-            try {
-              await User.findByIdAndUpdate(socket.userId, { lastSeen: new Date() });
-            } catch (error) {
-              console.error('Error updating last seen on disconnect:', error);
-            }
-          }
-          
-          // Broadcast user offline status
-          this.io.emit('user-offline', { userId: socket.userId });
           
           // Notify all rooms that user disconnected
           socket.broadcast.emit('user-disconnected', {
@@ -284,47 +258,6 @@ class SocketHandler {
     const socketId = this.connectedUsers.get(userId);
     if (socketId) {
       this.io.to(socketId).emit('notification', notification);
-    }
-  }
-
-  // Send pending join requests to President
-  async sendPendingJoinRequests(socket) {
-    try {
-      const User = require('../models/User');
-      const pendingUsers = await User.find({ status: 'pending' })
-        .select('username email originalPassword createdAt')
-        .sort({ createdAt: -1 });
-      
-      if (pendingUsers.length > 0) {
-        socket.emit('pending-join-requests', { requests: pendingUsers });
-      }
-    } catch (error) {
-      console.error('Error sending pending join requests:', error);
-    }
-  }
-
-  // Notify President about new join request
-  async notifyPresidentNewJoinRequest(newUser) {
-    try {
-      const User = require('../models/User');
-      const president = await User.findOne({ role: 'president', status: 'approved' });
-      
-      if (president) {
-        const presidentSocketId = this.connectedUsers.get(president._id.toString());
-        if (presidentSocketId) {
-          this.io.to(presidentSocketId).emit('new-join-request', {
-            user: {
-              _id: newUser._id,
-              username: newUser.username,
-              email: newUser.email,
-              originalPassword: newUser.originalPassword,
-              createdAt: newUser.createdAt
-            }
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error notifying president:', error);
     }
   }
 

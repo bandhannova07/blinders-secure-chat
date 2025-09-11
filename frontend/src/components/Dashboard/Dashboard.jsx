@@ -5,8 +5,6 @@ import Sidebar from './Sidebar';
 import ChatWindow from './ChatWindow';
 import Header from './Header';
 import JoinRequests from '../Admin/JoinRequests';
-import JoinRequestPopup from '../Admin/JoinRequestPopup';
-import UserControlMenu from '../Admin/UserControlMenu';
 import Settings from '../Settings/Settings';
 import MediaManagement from '../Admin/MediaManagement';
 import { Menu, X, UserPlus } from 'lucide-react';
@@ -19,8 +17,6 @@ const Dashboard = () => {
   const [showJoinRequests, setShowJoinRequests] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showMediaManagement, setShowMediaManagement] = useState(false);
-  const [showUserControl, setShowUserControl] = useState(false);
-  const [joinRequestPopup, setJoinRequestPopup] = useState(null);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -40,12 +36,11 @@ const Dashboard = () => {
       <Header 
         user={user}
         connected={connected}
-        toggleSidebar={toggleSidebar}
+        onMenuClick={toggleSidebar}
         sidebarOpen={sidebarOpen}
         onShowJoinRequests={() => setShowJoinRequests(true)}
         onShowSettings={() => setShowSettings(true)}
         onShowMediaManagement={() => setShowMediaManagement(true)}
-        onShowUserControl={() => setShowUserControl(true)}
       />
 
       {/* Main Content */}
@@ -135,30 +130,6 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-      )}
-
-      {/* User Control Menu */}
-      {showUserControl && (
-        <UserControlMenu 
-          user={user}
-          onClose={() => setShowUserControl(false)}
-        />
-      )}
-
-      {/* Join Request Popup */}
-      {joinRequestPopup && (
-        <JoinRequestPopup
-          request={joinRequestPopup}
-          onClose={() => setJoinRequestPopup(null)}
-          onApprove={(userId, role) => {
-            // Handle approval
-            setJoinRequestPopup(null);
-          }}
-          onDecline={(userId) => {
-            // Handle decline
-            setJoinRequestPopup(null);
-          }}
-        />
       )}
     </div>
   );

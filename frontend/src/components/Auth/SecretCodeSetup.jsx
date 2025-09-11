@@ -1,20 +1,22 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, Lock, Shield, AlertCircle } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useAuth } from '../../contexts/AuthContext';
+import { Shield, Eye, EyeOff, Lock, Check, X } from 'lucide-react';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
-const SecretCodeSetup = ({ username, password, onSetupComplete, onBack }) => {
+const SecretCodeSetup = ({ isOpen, onClose, onComplete }) => {
+  const { user } = useAuth();
   const [secretCode, setSecretCode] = useState('');
   const [confirmSecretCode, setConfirmSecretCode] = useState('');
   const [showSecretCode, setShowSecretCode] = useState(false);
-  const [showConfirmCode, setShowConfirmCode] = useState(false);
+  const [showConfirmSecretCode, setShowConfirmSecretCode] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSetup = async (e) => {
     e.preventDefault();
     
     if (!secretCode || !confirmSecretCode) {
-      toast.error('Please fill in all fields');
+      toast.error('Please fill in both fields');
       return;
     }
 
@@ -29,131 +31,131 @@ const SecretCodeSetup = ({ username, password, onSetupComplete, onBack }) => {
     }
 
     setLoading(true);
-
     try {
-      const response = await axios.post('/auth/setup-secret-code', {
-        username,
-        password,
+      await axios.post('/auth/setup-secret-code', {
         secretCode,
         confirmSecretCode
       });
-
-      if (response.data.success) {
-        toast.success('Secret code setup completed successfully!');
-        onSetupComplete();
-      } else {
-        toast.error(response.data.error || 'Setup failed');
-      }
+      
+      toast.success('Secret code setup successfully!');
+      setSecretCode('');
+      setConfirmSecretCode('');
+      onComplete?.();
+      onClose();
     } catch (error) {
-      console.error('Secret code setup error:', error);
-      toast.error(error.response?.data?.error || 'Setup failed');
+      toast.error(error.response?.data?.error || 'Failed to setup secret code');
     } finally {
       setLoading(false);
     }
   };
 
+  if (!isOpen || user?.role !== 'president') return null;
+
   return (
-    <div className="min-h-screen bg-blinders-black flex items-center justify-center p-4">
-      <div className="bg-blinders-dark border border-blinders-light-gray rounded-lg p-8 w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <Shield className="h-16 w-16 text-blinders-gold" />
-          </div>
-          <h1 className="text-2xl font-bold text-blinders-gold mb-2">
-            President Security Setup
-          </h1>
-          <p className="text-gray-400 text-sm">
-            Set up your secret code for enhanced security
-          </p>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-blinders-dark border border-blinders-light-gray rounded-lg max-w-md w-full mx-4 p-6">
+        <div className="flex items-center space-x-3 mb-6">
+          <Shield className="h-6 w-6 text-blinders-gold" />
+          <h2 className="text-xl font-bold text-blinders-gold">Setup Secret Code</h2>
         </div>
 
-        <div className="bg-yellow-900 bg-opacity-20 border border-yellow-600 rounded-lg p-4 mb-6">
-          <div className="flex items-start space-x-3">
-            <AlertCircle className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-yellow-200">
-              <p className="font-medium mb-1">Important Security Notice</p>
-              <p>Your secret code provides additional security for the President account. Keep it safe and don't share it with anyone.</p>
-            </div>
-          </div>
-        </div>
+        <p className="text-gray-300 mb-6">
+          As President, you can setup an additional secret code for enhanced security. 
+          This code will be required every time you login.
+        </p>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSetup} className="space-y-4">
+          {/* Secret Code Input */}
           <div>
-            <label htmlFor="secretCode" className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Secret Code
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
-                id="secretCode"
                 type={showSecretCode ? 'text' : 'password'}
                 value={secretCode}
                 onChange={(e) => setSecretCode(e.target.value)}
-                className="w-full pl-10 pr-12 py-3 bg-blinders-gray border border-blinders-light-gray rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blinders-gold focus:border-transparent"
-                placeholder="Enter your secret code"
+                className="w-full px-4 py-3 bg-blinders-gray border border-blinders-light-gray rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blinders-gold focus:border-transparent"
+                placeholder="Enter secret code (min 6 characters)"
                 minLength={6}
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowSecretCode(!showSecretCode)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
               >
                 {showSecretCode ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </div>
           </div>
 
+          {/* Confirm Secret Code Input */}
           <div>
-            <label htmlFor="confirmSecretCode" className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Confirm Secret Code
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
-                id="confirmSecretCode"
-                type={showConfirmCode ? 'text' : 'password'}
+                type={showConfirmSecretCode ? 'text' : 'password'}
                 value={confirmSecretCode}
                 onChange={(e) => setConfirmSecretCode(e.target.value)}
-                className="w-full pl-10 pr-12 py-3 bg-blinders-gray border border-blinders-light-gray rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blinders-gold focus:border-transparent"
-                placeholder="Confirm your secret code"
+                className="w-full px-4 py-3 bg-blinders-gray border border-blinders-light-gray rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blinders-gold focus:border-transparent"
+                placeholder="Confirm secret code"
                 minLength={6}
                 required
               />
               <button
                 type="button"
-                onClick={() => setShowConfirmCode(!showConfirmCode)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
+                onClick={() => setShowConfirmSecretCode(!showConfirmSecretCode)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
               >
-                {showConfirmCode ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                {showConfirmSecretCode ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
             </div>
           </div>
 
-          <div className="flex space-x-4">
-            <button
-              type="button"
-              onClick={onBack}
-              className="flex-1 py-3 px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200"
-              disabled={loading}
-            >
-              Back
-            </button>
+          {/* Security Notice */}
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <Lock className="h-5 w-5 text-yellow-400 mt-0.5" />
+              <div>
+                <p className="text-yellow-400 font-medium text-sm">Security Notice</p>
+                <p className="text-yellow-300 text-sm mt-1">
+                  Keep your secret code safe and memorable. You'll need it every time you login as President.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex space-x-3 pt-4">
             <button
               type="submit"
-              disabled={loading}
-              className="flex-1 py-3 px-4 bg-blinders-gold text-blinders-black font-semibold rounded-lg hover:bg-yellow-500 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading || !secretCode || !confirmSecretCode}
+              className="bg-blinders-gold hover:bg-yellow-500 text-blinders-black px-6 py-3 rounded-lg flex-1 flex items-center justify-center space-x-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Setting up...' : 'Complete Setup'}
+              {loading ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blinders-black"></div>
+              ) : (
+                <>
+                  <Check className="h-5 w-5" />
+                  <span>Setup Secret Code</span>
+                </>
+              )}
+            </button>
+            
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="bg-blinders-gray hover:bg-gray-600 text-white px-6 py-3 rounded-lg flex items-center justify-center space-x-2 transition-colors disabled:opacity-50"
+            >
+              <X className="h-5 w-5" />
+              <span>Cancel</span>
             </button>
           </div>
         </form>
-
-        <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">
-            By order of the BLINDERS
-          </p>
-        </div>
       </div>
     </div>
   );
