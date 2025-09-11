@@ -8,14 +8,31 @@ export const pingBackend = async () => {
     
     if (response.ok) {
       const data = await response.json();
-      console.log('Backend Alive ✅', data);
+      console.log('✅ Backend Alive', data);
       return { success: true, data };
     } else {
-      console.log('Backend unreachable ❌');
+      console.error('❌ Backend unreachable - Response not ok');
       return { success: false, error: 'Response not ok' };
     }
   } catch (error) {
-    console.log('Backend unreachable ❌');
+    console.error('❌ Backend unreachable', error.message);
     return { success: false, error: error.message };
   }
+};
+
+/**
+ * Start interval pinging to keep backend alive
+ */
+export const startBackendPing = () => {
+  // Initial ping
+  pingBackend();
+  
+  // Set interval to ping every 5 minutes
+  const pingInterval = setInterval(() => {
+    pingBackend();
+  }, 5 * 60 * 1000); // 5 minutes
+  
+  console.log('🔄 Backend ping interval started (every 5 minutes)');
+  
+  return pingInterval;
 };

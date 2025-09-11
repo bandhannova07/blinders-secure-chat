@@ -6,6 +6,7 @@ import CryptoJS from 'crypto-js';
 
 const SocketContext = createContext();
 
+// Use wss:// for production, ws:// for development
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:10000';
 
 export const useSocket = () => {
@@ -25,45 +26,73 @@ export const SocketProvider = ({ children }) => {
   const [messages, setMessages] = useState([]);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [typingUsers, setTypingUsers] = useState([]);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const [maxReconnectAttempts] = useState(10);
 
   // Encryption key (in production, this should be derived from user credentials)
   const encryptionKey = `blinders_${user?.id}_${user?.username}`;
 
-  // Initialize socket connection
+  // Initialize socket connection with auto-retry
   useEffect(() => {
     if (user && token) {
-      
-      const newSocket = io(SOCKET_URL, {
-        autoConnect: false,
-        transports: ['websocket', 'polling'],
-        auth: {
-          token: token
-        }
-      });
+      const connectSocket = () => {
+        const newSocket = io(SOCKET_URL, {
+          autoConnect: false,
+          transports: ['websocket', 'polling'],
+          auth: {
+            token: token
+          }
+        });
 
-      newSocket.connect();
+        newSocket.connect();
 
-      newSocket.on('connect', () => {
-        setConnected(true);
-        newSocket.emit('authenticate', token);
-      });
+        newSocket.on('connect', () => {
+          console.log('✅ Connected to backend WebSocket');
+          setConnected(true);
+          setReconnectAttempts(0);
+          newSocket.emit('authenticate', token);
+        });
 
-      newSocket.on('disconnect', (reason) => {
-        setConnected(false);
-      });
+        newSocket.on('disconnect', (reason) => {
+          console.log('❌ WebSocket disconnected:', reason);
+          setConnected(false);
+          
+          // Auto-retry connection
+          if (reconnectAttempts < maxReconnectAttempts) {
+            console.log(`🔄 Retrying connection in 5 seconds... (${reconnectAttempts + 1}/${maxReconnectAttempts})`);
+            setTimeout(() => {
+              setReconnectAttempts(prev => prev + 1);
+              connectSocket();
+            }, 5000);
+          } else {
+            console.error('❌ Max reconnection attempts reached');
+          }
+        });
 
-      newSocket.on('connect_error', (error) => {
-        setConnected(false);
-      });
+        newSocket.on('connect_error', (error) => {
+          console.error('❌ WebSocket connection error:', error.message);
+          setConnected(false);
+          
+          // Auto-retry on connection error
+          if (reconnectAttempts < maxReconnectAttempts) {
+            console.log(`🔄 Retrying connection in 5 seconds... (${reconnectAttempts + 1}/${maxReconnectAttempts})`);
+            setTimeout(() => {
+              setReconnectAttempts(prev => prev + 1);
+              connectSocket();
+            }, 5000);
+          }
+        });
 
-      newSocket.on('authenticated', (data) => {
-        toast.success('Connected to Blinders Secure Chat');
-      });
+        newSocket.on('authenticated', (data) => {
+          console.log('✅ WebSocket authenticated successfully');
+          toast.success('Connected to Blinders Secure Chat');
+        });
 
-      newSocket.on('auth-error', (data) => {
-        toast.error('Connection authentication failed');
-        setConnected(false);
-      });
+        newSocket.on('auth-error', (data) => {
+          console.error('❌ WebSocket authentication failed');
+          toast.error('Connection authentication failed');
+          setConnected(false);
+        });
 
       newSocket.on('error', (data) => {
         toast.error(data.error);
@@ -150,13 +179,16 @@ export const SocketProvider = ({ children }) => {
         });
       }
 
-      setSocket(newSocket);
+        setSocket(newSocket);
 
-      return () => {
-        newSocket.disconnect();
+        return () => {
+          newSocket.disconnect();
+        };
       };
+
+      connectSocket();
     }
-  }, [user, token]);
+  }, [user, token, reconnectAttempts, maxReconnectAttempts]);
 
   const joinRoom = (roomId) => {
     if (socket && connected) {

@@ -46,8 +46,10 @@ const JoinRequestPopup = ({ isOpen, onClose }) => {
     try {
       setLoading(true);
       const response = await axios.get('/auth/pending-requests');
+      console.log('✅ Pending requests fetched successfully');
       setPendingUsers(response.data.pendingUsers);
     } catch (error) {
+      console.error('❌ Failed to fetch pending requests:', error.message);
       console.error('Error fetching pending requests:', error);
     } finally {
       setLoading(false);

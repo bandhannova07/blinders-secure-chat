@@ -7,12 +7,19 @@ import Login from './components/Auth/Login';
 import Dashboard from './components/Dashboard/Dashboard';
 import AdminPanel from './components/Admin/AdminPanel';
 import LocalhostRestriction from './components/LocalhostRestriction';
-import { pingBackend } from './utils/pingBackend';
+import { startBackendPing } from './utils/pingBackend';
 
 function App() {
   useEffect(() => {
-    // Ping backend on app load to keep it alive
-    pingBackend();
+    // Start backend ping interval to keep it alive
+    const pingInterval = startBackendPing();
+    
+    // Cleanup interval on unmount
+    return () => {
+      if (pingInterval) {
+        clearInterval(pingInterval);
+      }
+    };
   }, []);
 
   return (

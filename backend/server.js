@@ -92,7 +92,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ 
-    status: 'OK', 
+    status: "ok", 
+    message: "Backend is alive ",
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development'
   });
@@ -186,6 +187,21 @@ const startServer = async () => {
       console.log(`🚀 Server running on ${HOST}:${PORT}`);
       console.log(`🔒 Localhost access is blocked for security`);
     });
+    
+    // Self-ping mechanism to keep backend alive (production only)
+    if (process.env.NODE_ENV === 'production') {
+      const https = require('https');
+      const selfPingInterval = setInterval(() => {
+        const url = `https://blinders-secure-chat-backend.onrender.com/api/health`;
+        https.get(url, (res) => {
+          console.log('Self-ping sent ✅');
+        }).on('error', (err) => {
+          console.log('Self-ping failed:', err.message);
+        });
+      }, 10 * 60 * 1000); // Every 10 minutes
+      
+      console.log('🔄 Self-ping mechanism activated for production');
+    }
     
     console.log(`📡 WebSocket server ready for connections`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'production'}`);
