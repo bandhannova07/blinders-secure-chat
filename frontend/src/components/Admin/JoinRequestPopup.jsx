@@ -19,13 +19,25 @@ const JoinRequestPopup = ({ isOpen, onClose }) => {
     }
   }, [isOpen, user]);
 
-  // Poll for new requests every 30 seconds when popup is open
+  // Listen for real-time join request updates
+  useEffect(() => {
+    const handleRefresh = () => {
+      if (isOpen && user?.role === 'president') {
+        fetchPendingRequests();
+      }
+    };
+
+    window.addEventListener('refreshJoinRequests', handleRefresh);
+    return () => window.removeEventListener('refreshJoinRequests', handleRefresh);
+  }, [isOpen, user]);
+
+  // Poll for new requests every 10 seconds when popup is open
   useEffect(() => {
     if (!isOpen || user?.role !== 'president') return;
 
     const interval = setInterval(() => {
       fetchPendingRequests();
-    }, 30000);
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [isOpen, user]);
@@ -142,7 +154,13 @@ const JoinRequestPopup = ({ isOpen, onClose }) => {
               <div className="text-center py-8">
                 <UserPlus className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-300 mb-2">No Pending Requests</h3>
-                <p className="text-gray-400">All join requests have been processed.</p>
+                <p className="text-gray-400 mb-4">All join requests have been processed.</p>
+                <button
+                  onClick={onClose}
+                  className="bg-blinders-gold hover:bg-yellow-500 text-blinders-black px-4 py-2 rounded-lg transition-colors"
+                >
+                  Close
+                </button>
               </div>
             ) : (
               <div className="space-y-4">
@@ -201,6 +219,16 @@ const JoinRequestPopup = ({ isOpen, onClose }) => {
                     </div>
                   </div>
                 ))}
+                
+                {/* Close Button at Bottom */}
+                <div className="flex justify-center pt-4 border-t border-blinders-light-gray">
+                  <button
+                    onClick={onClose}
+                    className="bg-blinders-gray hover:bg-blinders-light-gray text-white px-6 py-2 rounded-lg transition-colors"
+                  >
+                    Close Panel
+                  </button>
+                </div>
               </div>
             )}
           </div>

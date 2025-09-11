@@ -32,9 +32,6 @@ export const SocketProvider = ({ children }) => {
   // Initialize socket connection
   useEffect(() => {
     if (user && token) {
-      console.log('Initializing socket connection for user:', user.username);
-      console.log('Using token:', token ? 'Token present' : 'No token');
-      console.log('Socket URL:', SOCKET_URL);
       
       const newSocket = io(SOCKET_URL, {
         autoConnect: false,
@@ -47,42 +44,37 @@ export const SocketProvider = ({ children }) => {
       newSocket.connect();
 
       newSocket.on('connect', () => {
-        console.log('Socket connected');
         setConnected(true);
-        
-        // Authenticate with the server
         newSocket.emit('authenticate', token);
       });
 
-      newSocket.on('disconnect', () => {
-        console.log('Socket disconnected');
+      newSocket.on('disconnect', (reason) => {
+        setConnected(false);
+      });
+
+      newSocket.on('connect_error', (error) => {
         setConnected(false);
       });
 
       newSocket.on('authenticated', (data) => {
-        console.log('Socket authenticated:', data.user);
         toast.success('Connected to Blinders Secure Chat');
       });
 
       newSocket.on('auth-error', (data) => {
-        console.error('Socket auth error:', data.error);
         toast.error('Connection authentication failed');
         setConnected(false);
       });
 
       newSocket.on('error', (data) => {
-        console.error('Socket error:', data.error);
         toast.error(data.error);
       });
 
       newSocket.on('joined-room', (data) => {
-        console.log('Joined room:', data);
         setCurrentRoom(data);
         toast.success(`Joined ${data.roomIcon} ${data.roomName}`);
       });
 
       newSocket.on('left-room', (data) => {
-        console.log('Left room:', data);
         if (currentRoom?.roomId === data.roomId) {
           setCurrentRoom(null);
           setMessages([]);
@@ -90,7 +82,6 @@ export const SocketProvider = ({ children }) => {
       });
 
       newSocket.on('new-message', (message) => {
-        console.log('New message received:', message);
         
         // Decrypt message if encrypted
         let decryptedContent = message.content;
@@ -102,7 +93,6 @@ export const SocketProvider = ({ children }) => {
               decryptedContent = decrypted;
             }
           } catch (error) {
-            console.error('Failed to decrypt message:', error);
             // Keep original content if decryption fails
           }
         }
@@ -127,12 +117,10 @@ export const SocketProvider = ({ children }) => {
       });
 
       newSocket.on('user-joined', (data) => {
-        console.log('User joined room:', data);
         setOnlineUsers(prev => [...prev.filter(u => u.userId !== data.userId), data]);
       });
 
       newSocket.on('user-left', (data) => {
-        console.log('User left room:', data);
         setOnlineUsers(prev => prev.filter(u => u.userId !== data.userId));
       });
 
@@ -152,11 +140,13 @@ export const SocketProvider = ({ children }) => {
       // Listen for new join requests (President only)
       if (user?.role === 'president') {
         newSocket.on('new-join-request', (data) => {
-          console.log('New join request received:', data);
           toast.success(`New join request from ${data.username}`, {
             duration: 6000,
             icon: '👤'
           });
+          
+          // Trigger refresh of join requests if popup is open
+          window.dispatchEvent(new CustomEvent('refreshJoinRequests'));
         });
       }
 
@@ -194,7 +184,6 @@ export const SocketProvider = ({ children }) => {
         encryptedContent = CryptoJS.AES.encrypt(sanitizedContent, encryptionKey).toString();
         isEncrypted = true;
       } catch (error) {
-        console.error('Failed to encrypt message:', error);
         // Send unencrypted if encryption fails
         encryptedContent = sanitizedContent;
       }

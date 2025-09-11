@@ -42,14 +42,20 @@ router.post('/signup', async (req, res) => {
 
     // If not first user, notify President about join request
     if (!isFirstUser) {
-      // Emit real-time notification via Socket.IO
+      // Emit real-time notification via Socket.IO to President only
       const io = req.app.get('io');
       if (io) {
-        io.emit('new-join-request', {
-          userId: user._id,
-          username: user.username,
-          email: user.email,
-          timestamp: new Date()
+        // Find all connected President users and emit to them specifically
+        const connectedSockets = io.sockets.sockets;
+        connectedSockets.forEach((socket) => {
+          if (socket.user && socket.user.role === 'president') {
+            socket.emit('new-join-request', {
+              userId: user._id,
+              username: user.username,
+              email: user.email,
+              timestamp: new Date()
+            });
+          }
         });
       }
       const president = await User.findOne({ role: 'president', status: 'approved' });

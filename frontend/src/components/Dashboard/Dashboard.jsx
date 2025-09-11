@@ -38,7 +38,7 @@ const Dashboard = () => {
         connected={connected}
         onMenuClick={toggleSidebar}
         sidebarOpen={sidebarOpen}
-        onShowJoinRequests={() => setShowJoinRequests(true)}
+        onShowJoinRequests={() => setShowJoinRequests(!showJoinRequests)}
         onShowSettings={() => setShowSettings(true)}
         onShowMediaManagement={() => setShowMediaManagement(true)}
       />
@@ -82,7 +82,7 @@ const Dashboard = () => {
                 </p>
                 {user?.role === 'president' && (
                   <button
-                    onClick={() => setShowJoinRequests(true)}
+                    onClick={() => setShowJoinRequests(!showJoinRequests)}
                     className="btn-primary flex items-center space-x-2 mx-auto mb-4"
                   >
                     <UserPlus className="h-5 w-5" />
