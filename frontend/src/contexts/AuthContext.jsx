@@ -4,10 +4,23 @@ import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:10000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://blinders-secure-chat.onrender-backend.com/api';
 
 // Configure axios defaults
 axios.defaults.baseURL = API_BASE_URL;
+
+// Add response interceptor for better error handling
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('❌ API Request failed:', error.message);
+    if (error.response) {
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', error.response.data);
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
