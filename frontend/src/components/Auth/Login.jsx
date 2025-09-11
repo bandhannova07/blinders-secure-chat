@@ -46,7 +46,8 @@ const Login = () => {
         const result = await login(
           formData.username, 
           formData.password, 
-          requiresTwoFactor ? formData.twoFactorToken : null
+          requiresTwoFactor ? formData.twoFactorToken : null,
+          null
         );
 
         if (result.requiresTwoFactor) {

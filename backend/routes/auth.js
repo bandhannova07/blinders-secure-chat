@@ -127,7 +127,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    const isValidPassword = await user.comparePassword(password);
 
     if (!isValidPassword) {
       return res.status(401).json({
@@ -241,7 +241,7 @@ router.post('/setup-secret-code', async (req, res) => {
     }
 
     // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    const isValidPassword = await user.comparePassword(password);
 
     if (!isValidPassword) {
       return res.status(401).json({
