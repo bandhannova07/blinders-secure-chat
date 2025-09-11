@@ -241,29 +241,6 @@ router.post('/logout', authenticateToken, (req, res) => {
   res.json({ message: 'Logged out successfully' });
 });
 
-// Get current user profile
-router.get('/profile', authenticateToken, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.userId).select('-password -originalPassword');
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    res.json({
-      user: {
-        id: user._id,
-        username: user.username,
-        role: user.role,
-        status: user.status,
-        lastSeen: user.lastSeen,
-        createdAt: user.createdAt
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // Setup 2FA (President and Vice President only)
 router.post('/setup-2fa', authenticateToken, async (req, res) => {
   try {

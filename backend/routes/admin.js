@@ -20,6 +20,19 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
+// Get user directory (admin only)
+router.get('/users/directory', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const users = await User.find({ status: 'approved' })
+      .select('username role status lastSeen createdAt')
+      .sort({ lastSeen: -1 });
+
+    res.json({ users });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Update user role (President only)
 router.put('/users/:userId/role', authenticateToken, requirePresident, async (req, res) => {
   try {
