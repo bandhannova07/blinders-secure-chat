@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -7,8 +7,14 @@ import Login from './components/Auth/Login';
 import Dashboard from './components/Dashboard/Dashboard';
 import AdminPanel from './components/Admin/AdminPanel';
 import LocalhostRestriction from './components/LocalhostRestriction';
+import { pingBackend } from './utils/pingBackend';
 
 function App() {
+  useEffect(() => {
+    // Ping backend on app load to keep it alive
+    pingBackend();
+  }, []);
+
   return (
     <LocalhostRestriction>
       <AuthProvider>
