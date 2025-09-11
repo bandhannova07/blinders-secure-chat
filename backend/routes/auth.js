@@ -365,6 +365,8 @@ router.get('/profile', authenticateToken, async (req, res) => {
 
 // Get pending join requests (President only)
 router.get('/pending-requests', authenticateToken, async (req, res) => {
+  res.header('Access-Control-Allow-Origin', 'https://blinders-secure-chat.netlify.app');
+  res.header('Access-Control-Allow-Credentials', 'true');
   try {
     if (req.user.role !== 'president') {
       return res.status(403).json({ error: 'Only President can view pending requests' });

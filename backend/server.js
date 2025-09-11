@@ -58,7 +58,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 const io = socketIo(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: ["https://blinders-secure-chat.netlify.app", "http://localhost:3000"],
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -70,7 +70,8 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:3000",
+  origin: ["https://blinders-secure-chat.netlify.app", "http://localhost:3000"],
+  methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
 
