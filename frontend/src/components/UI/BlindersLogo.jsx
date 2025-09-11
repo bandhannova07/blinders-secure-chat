@@ -26,11 +26,66 @@ const BlindersLogo = ({ size = 'medium', showText = true, className = '' }) => {
         <div className="relative flex items-center justify-center">
           {/* Crown Symbol */}
           <svg 
-            className="w-3/4 h-3/4 text-blinders-gold" 
-            fill="currentColor" 
-            viewBox="0 0 24 24"
+            className="w-full h-full" 
+            viewBox="0 0 120 120"
+            fill="none"
           >
-            <path d="M5 16L3 4l5.5 5L12 4l3.5 5L21 4l-2 12H5zm2.7-2h8.6l.9-5.4-2.1 1.7L12 8l-3.1 2.3-2.1-1.7L7.7 14z"/>
+            <defs>
+              <radialGradient id="goldGradient" cx="50%" cy="30%" r="70%">
+                <stop offset="0%" stopColor="#FFD700" stopOpacity="1" />
+                <stop offset="50%" stopColor="#D4AF37" stopOpacity="1" />
+                <stop offset="100%" stopColor="#B8860B" stopOpacity="1" />
+              </radialGradient>
+              
+              <linearGradient id="crownGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#FFD700" stopOpacity="1" />
+                <stop offset="50%" stopColor="#D4AF37" stopOpacity="1" />
+                <stop offset="100%" stopColor="#B8860B" stopOpacity="1" />
+              </linearGradient>
+              
+              <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+                <feDropShadow dx="2" dy="4" stdDeviation="3" floodColor="#000000" floodOpacity="0.3"/>
+              </filter>
+              
+              <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                <feMerge> 
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+            </defs>
+            
+            <circle cx="60" cy="60" r="50" fill="url(#goldGradient)" opacity="0.15" filter="url(#glow)"/>
+            <circle cx="60" cy="60" r="48" fill="none" stroke="url(#goldGradient)" strokeWidth="2" opacity="0.6"/>
+            <circle cx="60" cy="60" r="42" fill="none" stroke="#D4AF37" strokeWidth="3" opacity="0.9"/>
+            
+            <path d="M30 75 L25 45 L40 58 L60 40 L80 58 L95 45 L90 75 Z" 
+                  fill="url(#crownGradient)" 
+                  filter="url(#shadow)" 
+                  opacity="0.95"/>
+            
+            <path d="M35 70 L85 70 L87 55 L75 65 L60 50 L45 65 L33 55 Z" 
+                  fill="#FFD700" 
+                  opacity="0.8"/>
+            
+            <circle cx="45" cy="62" r="2" fill="#FF6B6B" opacity="0.8"/>
+            <circle cx="60" cy="58" r="2.5" fill="#4ECDC4" opacity="0.8"/>
+            <circle cx="75" cy="62" r="2" fill="#45B7D1" opacity="0.8"/>
+            
+            <polygon points="40,58 45,45 50,58" fill="url(#crownGradient)" opacity="0.9"/>
+            <polygon points="55,50 60,35 65,50" fill="url(#crownGradient)" opacity="0.9"/>
+            <polygon points="70,58 75,45 80,58" fill="url(#crownGradient)" opacity="0.9"/>
+            
+            <circle cx="85" cy="35" r="3" fill="#D4AF37" opacity="0.7" filter="url(#glow)"/>
+            <circle cx="35" cy="85" r="2.5" fill="#D4AF37" opacity="0.6" filter="url(#glow)"/>
+            <circle cx="90" cy="80" r="2" fill="#FFD700" opacity="0.5"/>
+            <circle cx="30" cy="40" r="1.5" fill="#FFD700" opacity="0.4"/>
+            
+            <path d="M20 60 Q30 50, 40 60" stroke="#D4AF37" strokeWidth="2" fill="none" opacity="0.6"/>
+            <path d="M80 60 Q90 50, 100 60" stroke="#D4AF37" strokeWidth="2" fill="none" opacity="0.6"/>
+            
+            <circle cx="60" cy="55" r="8" fill="none" stroke="#FFD700" strokeWidth="1" opacity="0.4"/>
           </svg>
           
           {/* Decorative Dots */}

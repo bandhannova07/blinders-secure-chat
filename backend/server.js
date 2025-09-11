@@ -58,7 +58,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 const io = socketIo(server, {
   cors: {
-    origin: ["https://blinders-secure-chat.netlify.app", "http://localhost:3000"],
+    origin: ["https://blinders-secure-chat.netlify.app"],
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -70,7 +70,7 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: ["https://blinders-secure-chat.netlify.app", "http://localhost:3000"],
+  origin: ["https://blinders-secure-chat.netlify.app"],
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
@@ -104,7 +104,7 @@ const socketHandler = new SocketHandler(io);
 // Database connection
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/blinders-secure-chat', {
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://bandhannova_mongodb_07:JcL2%40uci5w6JhBE@blinders-secure-chat.he477fw.mongodb.net/?retryWrites=true&w=majority&appName=blinders-secure-chat', {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
@@ -171,7 +171,7 @@ app.use('*', (req, res) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 const HOST = process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost';
 
 const startServer = async () => {
@@ -188,8 +188,8 @@ const startServer = async () => {
     });
     
     console.log(`📡 WebSocket server ready for connections`);
-    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'production'}`);
+    console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://blinders-secure-chat.netlify.app'}`);
     console.log(`👑 Permanent President account initialized`);
   } catch (error) {
     console.error('❌ Server startup failed:', error);
